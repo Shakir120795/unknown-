@@ -1,0 +1,14 @@
+node_modules/
+.env
+.env.*
+!.env.example
+dist/
+build/
+coverage/
+.cache/
+.DS_Store
+*.pem
+*.key
+private/
+secrets/
+collection/hidden-metadata/

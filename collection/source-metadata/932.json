@@ -1,0 +1,56 @@
+{
+ "name": "UNKNOWN #932",
+ "description": "UNKNOWN: 1111 anonymous operators, mined on Ethereum. Proof-of-work minted, 64x64 pixel art.",
+ "image": "ipfs://REPLACE_IMAGES_CID/932.png",
+ "attributes": [
+  {
+   "trait_type": "Hood",
+   "value": "Navy"
+  },
+  {
+   "trait_type": "Eyes",
+   "value": "Visor"
+  },
+  {
+   "trait_type": "Eye Color",
+   "value": "Amber"
+  },
+  {
+   "trait_type": "Face",
+   "value": "Cracked"
+  },
+  {
+   "trait_type": "Mouth",
+   "value": "Zigzag"
+  },
+  {
+   "trait_type": "Head",
+   "value": "Crown"
+  },
+  {
+   "trait_type": "Chest",
+   "value": "Chain"
+  },
+  {
+   "trait_type": "Back",
+   "value": "Pickaxe"
+  },
+  {
+   "trait_type": "Background",
+   "value": "Moss"
+  },
+  {
+   "trait_type": "Pattern",
+   "value": "Rain"
+  },
+  {
+   "trait_type": "Rarity",
+   "value": "Legendary"
+  },
+  {
+   "trait_type": "Rarity Rank",
+   "value": 9,
+   "display_type": "number"
+  }
+ ]
+}

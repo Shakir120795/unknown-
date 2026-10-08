@@ -1,0 +1,35 @@
+{
+  "name": "unknown-mining",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "contracts"
+  ],
+  "scripts": {
+    "contract:compile": "npx hardhat compile",
+    "contract:test": "npx hardhat test",
+    "test": "npm run collection:verify && npm run proof:test && npm run gpu:test && npm run static:check && npm run contract:test",
+    "collection:verify": "node scripts/verify-collection.mjs",
+    "reveal:build": "node scripts/build-reveal.mjs",
+    "mine": "npm run mine -w packages/mining",
+    "verify": "npm run verify -w packages/mining",
+    "web": "npm run dev -w @unknown/web",
+    "deploy:sepolia": "node scripts/deploy.mjs --sepolia",
+    "deploy:mainnet": "node scripts/deploy.mjs --mainnet",
+    "hidden:build": "node scripts/build-hidden-metadata.mjs",
+    "web:config": "node scripts/write-web-config.mjs",
+    "proof:test": "node tests/proof-vectors.mjs",
+    "static:check": "node tests/static-check.mjs",
+    "gpu:test": "node tests/gpu-reference.mjs"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^6.0.0",
+    "@openzeppelin/contracts": "5.4.0",
+    "hardhat": "^2.26.0"
+  },
+  "dependencies": {
+    "ethers": "^6.15.0"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "algorithm": "sha256(concat(sha256(images/1.png) ... sha256(images/1111.png)))",
+  "provenanceHash": "0x3f46305502ca893461bdc3a6cf5bb7f7e715f16ce838a1ff29a055b7209432aa",
+  "note": "Commit this hash in the contract at deploy. Anyone can recompute it from the revealed images."
+}

@@ -1,0 +1,15 @@
+{
+  "collectionSupply": 1111,
+  "paymentToken": "IMD",
+  "paymentTokenDecimals": 18,
+  "pricing": ["0.2", "0.5", "0.8", "1.1", "1.5", "2.0"],
+  "phaseRanges": [[1,200],[201,400],[401,600],[601,800],[801,1000],[1001,1111]],
+  "difficultyBits": [16,18,20,22,24,26],
+  "mining": {
+    "algorithm": "SHA-256",
+    "backendRequired": false,
+    "minerTypes": ["CPU", "GPU-WebGPU"],
+    "maxChallengeAgeBlocks": 32
+  },
+  "reveal": {"trigger": "NFT_SELL_OUT", "permissionless": true}
+}

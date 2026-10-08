@@ -1,0 +1,20 @@
+{
+  "name": "UNKNOWN",
+  "maxSupply": 1111,
+  "ids": "1-1111",
+  "chain": "Ethereum",
+  "payment": "IMD",
+  "imageSize": "64x64 RGBA PNG",
+  "displayImageSize": "640x640 RGBA PNG",
+  "provenanceHash": "0x3f46305502ca893461bdc3a6cf5bb7f7e715f16ce838a1ff29a055b7209432aa",
+  "artworkSource": "user-provided collection",
+  "privateShuffleSecret": "NOT_INCLUDED",
+  "publicAssets": {
+    "images": "./images",
+    "images_hd": "./images_hd",
+    "sourceMetadata": "./source-metadata"
+  },
+  "hiddenAssets": {
+    "placeholder": "./hidden/placeholder.png"
+  }
+}
