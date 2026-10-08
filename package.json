@@ -16,6 +16,8 @@
     "mine": "npm run mine -w packages/mining",
     "verify": "npm run verify -w packages/mining",
     "web": "npm run dev -w @unknown/web",
+    "web:build": "npm run build -w @unknown/web",
+    "web:preview": "npm run preview -w @unknown/web",
     "deploy:sepolia": "node scripts/deploy.mjs --sepolia",
     "deploy:mainnet": "node scripts/deploy.mjs --mainnet",
     "hidden:build": "node scripts/build-hidden-metadata.mjs",
@@ -27,7 +29,8 @@
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^6.0.0",
     "@openzeppelin/contracts": "5.4.0",
-    "hardhat": "^2.26.0"
+    "hardhat": "^2.26.0",
+    "vite": "^6.3.5"
   },
   "dependencies": {
     "ethers": "^6.15.0"
