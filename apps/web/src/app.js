@@ -218,24 +218,17 @@ async function start(kind) {
 
     // The smart contract is the final authority. Recompute locally for diagnostics,
     // then verify the candidate nonce directly with the deployed contract before payment.
+    // Recompute the candidate from the canonical proof input. The nonce is the
+    // only value the GPU/CPU miner needs to return; its displayed digest is not
+    // trusted because GPU work can race across lanes.
     const recomputedHash = proofHash({...args, nonce: result.nonce});
     const localValid = validDifficulty(recomputedHash, work.difficultyBits);
-    const hashMatchesWorker = result.hash === recomputedHash;
-    setStatus(
-      localValid && hashMatchesWorker
-        ? 'Valid proof found. Confirming on-chain…'
-        : 'Candidate found. Confirming proof on-chain…',
-      'ok'
-    );
+    if (!localValid) throw new Error('PROOF_INVALID');
+
+    setStatus('Valid proof found. Confirming on-chain…', 'ok');
 
     const onchainOk = await readNft.isValidProof(wallet, work.tokenId, work.seedBlock, result.nonce);
-    if (!onchainOk) {
-      throw new Error(
-        localValid
-          ? 'PROOF_REJECTED_ONCHAIN'
-          : 'PROOF_HASH_MISMATCH'
-      );
-    }
+    if (!onchainOk) throw new Error('PROOF_REJECTED_ONCHAIN');
 
     setStatus('Proof accepted by contract. Preparing IMD payment…', 'ok');
 
