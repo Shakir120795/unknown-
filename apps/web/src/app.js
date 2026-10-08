@@ -13,8 +13,8 @@ const NFT_ABI = [
   'function phasePrice(uint8) view returns(uint256)',
   'function phaseDifficultyBits(uint8) view returns(uint8)',
   'function currentWork() view returns(uint256,bytes32,uint256,uint8,uint256,uint8)',
-  'function isValidProof(address,uint256,uint256,uint256) view returns(bool)',
-  'function mint(uint256,uint256)',
+  'function isValidProof(address,uint256,uint48,uint64) view returns(bool)',
+  'function mint(uint48,uint64)',
   'function artIdOf(uint256) view returns(uint256)',
   'function tokenURI(uint256) view returns(string)',
   'function provenanceHash() view returns(bytes32)'
