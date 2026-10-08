@@ -34,7 +34,7 @@ fn meets(w:array<u32,8>, bits:u32)->bool {
 fn main(@builtin(global_invocation_id) gid:vec3<u32>) {
   let idx = gid.x;
   let lo = p[26u] + idx;
-  let carry = select(0u, 1u, lo < p.baseLo);
+  let carry = select(0u, 1u, lo < p[26u]);
   let hi = p[27u] + carry;
 
   // SHA-256 block 0 (first 64 bytes of the fixed 112-byte preimage).
@@ -54,7 +54,7 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>) {
 
   // SHA-256 block 1 (remaining 48-byte prefix + 8-byte nonce + padding + length).
   var w2 = array<u32,64>();
-  for(var i:u32=0u;i<10u;i++){ w2[i]=p.prefix[16u+i]; }
+  for(var i:u32=0u;i<10u;i++){ w2[i]=p[16u+i]; }
   w2[10u]=hi;
   w2[11u]=lo;
   w2[12u]=0x80000000u;
