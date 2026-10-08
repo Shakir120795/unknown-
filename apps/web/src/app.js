@@ -1,4 +1,4 @@
-import { BrowserProvider, Contract, formatUnits } from 'ethers';
+import { BrowserProvider, Contract, JsonRpcProvider, formatUnits } from 'ethers';
 import { buildPowInput, proofHash, validDifficulty } from './pow.js';
 import { hasWebGPU, mineGpu } from './gpu-miner.js';
 
@@ -26,7 +26,7 @@ const ERC20_ABI = [
 ];
 
 const $ = id => document.getElementById(id);
-let provider, signer, wallet, nft, imd, work, controller;
+let provider, readProvider, signer, wallet, nft, imd, work, controller;
 
 function setStatus(msg, cls='') { $('status').textContent = msg; $('status').className=cls; }
 function setMintStatus(msg, cls='') { $('mintStatus').textContent = msg; $('mintStatus').className=cls; }
@@ -56,6 +56,7 @@ function setDisconnectedUi() {
 async function connect(requestAccounts = true) {
   if (!window.ethereum) throw new Error('Install MetaMask or another EVM wallet.');
   if (!provider) provider = new BrowserProvider(window.ethereum);
+  if (!readProvider) readProvider = new JsonRpcProvider(CONFIG.rpcUrl);
 
   const accounts = requestAccounts
     ? await provider.send('eth_requestAccounts', [])
@@ -109,10 +110,13 @@ async function connect(requestAccounts = true) {
 }
 
 async function refresh() {
-  if (!nft) return;
-  const phase = await nft.currentPhase();
+  if (!readProvider) readProvider = new JsonRpcProvider(CONFIG.rpcUrl);
+  const readNft = new Contract(CONFIG.nftAddress, NFT_ABI, readProvider);
+  const sourceNft = nft || readNft;
+  if (!sourceNft) return;
+  const phase = await sourceNft.currentPhase();
   const [minted, remaining, price, difficulty] = await Promise.all([
-    nft.totalMinted(), nft.remaining(), nft.phasePrice(phase), nft.phaseDifficultyBits(phase)
+    sourceNft.totalMinted(), sourceNft.remaining(), sourceNft.phasePrice(phase), sourceNft.phaseDifficultyBits(phase)
   ]);
   const nextToken = BigInt(minted) + 1n;
   const phaseNumber = Number(phase);
@@ -238,14 +242,24 @@ $('checkBalance').onclick = async()=>{
 (async function boot(){
   $('configState').textContent = CONFIG.nftAddress && CONFIG.imdAddress ? 'Launch configuration loaded.' : 'Set contract and IMD token addresses before build.';
   $('mineCpu').disabled=true; $('mineGpu').disabled=true;
+  try {
+    readProvider = new JsonRpcProvider(CONFIG.rpcUrl);
+    await refresh();
+    if (!wallet) setStatus('Live chain data loaded. Connect your wallet to mine.');
+  } catch (e) {
+    console.warn('LIVE_CHAIN_READ_ERROR', e);
+    setStatus('Live chain data unavailable. Please refresh the page.', 'err');
+  }
   if (window.ethereum?.on) {
     try {
-      if (!provider) provider = new BrowserProvider(window.ethereum);
+      provider = provider || new BrowserProvider(window.ethereum);
       const accounts = await provider.send('eth_accounts', []);
       if (accounts?.[0]) await connect(false);
     } catch (e) {
       console.warn('WALLET_RESTORE_ERROR', e);
     }
   }
-  refresh().catch(()=>{});
+  window.setInterval(() => {
+    refresh().catch(e => console.warn('LIVE_REFRESH_ERROR', e));
+  }, 12000);
 })();
