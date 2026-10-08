@@ -36,6 +36,7 @@ async function connectWallet() {
 }
 
 for (const button of connectButtons) {
+  if (button.id === 'connect') continue;
   button.addEventListener('click', e => {
     if (button.tagName === 'A' && button.getAttribute('href') === './mint.html' && window.ethereum?.request) {
       e.preventDefault();
