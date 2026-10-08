@@ -1,142 +1,108 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-  <meta name="theme-color" content="#070807">
-  <meta name="description" content="UNKNOWN — 1,111 anonymous operators. Mine SHA-256 proof with CPU or GPU, then mint the next NFT directly on Ethereum.">
-  <title>UNKNOWN — Proof of Work NFT</title>
+  <meta name="description" content="UNKNOWN — 1,111 anonymous operators. Mine SHA-256 proof with CPU or GPU and mint directly on Ethereum in IMD.">
+  <title>UNKNOWN — 1,111 Operators</title>
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-<main class="wrap">
-  <div class="topbar">
-    <div class="brandmark"><span class="brand-dot"></span><span>UNKNOWN // 1111 OPERATORS</span></div>
-    <div class="network"><span class="live-dot"></span><span>Ethereum Mainnet · PoW</span></div>
+<header class="site-header">
+  <div class="nav-shell">
+    <a class="brand" href="./index.html"><span class="brand-dot"></span><span>UNKNOWN</span><small>// 1111 OPERATORS</small></a>
+    <nav class="nav-tabs" aria-label="Main navigation">
+      <a class="active" href="./index.html">HOME</a>
+      <a href="./mint.html">MINT</a>
+      <a href="./collection.html">COLLECTION</a>
+      <a href="./how-it-works.html">HOW IT WORKS</a>
+      <a href="./faq.html">FAQ</a>
+      <a class="nav-opensea" href="https://opensea.io/assets/ethereum/0x02508985edA13BFBC0917eC9FfA02045448C3c40/1" target="_blank" rel="noopener noreferrer">OPENSEA ↗</a>
+    </nav>
+    <a class="nav-wallet" href="./mint.html">CONNECT WALLET</a>
   </div>
+</header>
 
-  <section class="hero panel">
+<main>
+  <section class="home-hero">
+    <div class="hero-glow"></div>
     <div class="hero-copy">
-      <div>
-        <div class="eyebrow">Anonymous collection <span>·</span> mined on-chain <span>·</span> 0/1111</div>
-        <h1 class="title">WHO<br><span class="title-accent">ARE YOU?</span></h1>
-        <p class="lead">1,111 anonymous operators. Find a SHA-256 proof with your CPU or GPU. When the proof is valid, mint the next UNKNOWN directly through the Ethereum contract in IMD — no coordinator, no private mint key. Your artwork is assigned and revealed immediately on mint.</p>
-
-        <div class="hero-meta">
-          <div class="meta-chip"><span class="label">Supply</span><span class="value">1,111 NFTs</span></div>
-          <div class="meta-chip"><span class="label">Algorithm</span><span class="value">SHA-256 PoW</span></div>
-          <div class="meta-chip"><span class="label">Mint Model</span><span class="value">Permissionless</span></div>
-        </div>
-
-        <div class="hero-actions">
-          <button id="connect" class="primary">Connect Wallet</button>
-          <button id="checkBalance" class="action-main">Check IMD Balance</button>
-        </div>
-
-        <div class="status-row">
-          <span id="configState">Loading launch configuration…</span>
-          <span id="wallet" class="wallet-pill">Not connected</span>
-        </div>
+      <div class="eyebrow"><span>LIVE</span> · ETHEREUM MAINNET · SHA-256 PROOF OF WORK</div>
+      <h1>WHO<br><span>ARE YOU?</span></h1>
+      <p class="hero-lead">1,111 anonymous operators. Mine a wallet-bound SHA-256 proof, submit it directly to the Ethereum contract in IMD, and receive a unique artwork the moment your mint is confirmed.</p>
+      <div class="hero-buttons">
+        <a class="btn btn-primary" href="./mint.html">START MINING ↗</a>
+        <a class="btn btn-ghost" href="./collection.html">VIEW COLLECTION</a>
+        <a class="btn btn-ghost" href="https://opensea.io/assets/ethereum/0x02508985edA13BFBC0917eC9F9F02045448C3c40/1" target="_blank" rel="noopener noreferrer">OPEN OPENSEA ↗</a>
+      </div>
+      <div class="hero-stats">
+        <div><b>1,111</b><span>TOTAL SUPPLY</span></div>
+        <div><b>6</b><span>DIFFICULTY PHASES</span></div>
+        <div><b>INSTANT</b><span>REVEAL MODEL</span></div>
       </div>
     </div>
-
-    <div class="hero-right">
-      <div class="portrait-frame">
-        <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
-        <img src="https://raw.githubusercontent.com/Shakir120795/unknown-/main/collection/images_hd/1.png" alt="UNKNOWN collection operator artwork" loading="eager">
-        <div class="portrait-tag">UNKNOWN // PREVIEW</div>
-        <div class="portrait-id">ART #001 · PREVIEW</div>
+    <div class="hero-art">
+      <div class="art-grid"></div>
+      <div class="art-card">
+        <div class="art-head"><span>UNKNOWN // PREVIEW</span><span>ART #001</span></div>
+        <img src="https://raw.githubusercontent.com/Shakir120795/unknown-/main/collection/images_hd/1.png" alt="UNKNOWN artwork preview">
+        <div class="art-foot"><span>UNIQUE ARTWORK</span><span>IPFS</span></div>
       </div>
     </div>
   </section>
 
-  <section class="section panel">
-    <div class="section-head">
-      <div><div class="kicker">Progression</div><div class="section-title">Six phases. Rising difficulty.</div></div>
-      <div class="section-note">The chain decides the current phase</div>
+  <section class="ticker"><div>PROOF → PAYMENT → MINT → REVEAL</div><div>NO COORDINATOR · NO PRIVATE MINT KEY · NO BACKEND</div><div>ETHEREUM MAINNET</div></section>
+
+  <section class="page-section">
+    <div class="section-heading">
+      <div><span class="kicker">THE LOOP</span><h2>Four moves. One operator.</h2></div>
+      <a class="text-link" href="./how-it-works.html">LEARN THE FLOW ↗</a>
     </div>
-    <div class="phases">
-      <div class="phase-grid">
-        <article class="phase-card" data-phase="1"><span class="phase-dot"></span><div class="phase-no">PHASE 01</div><div class="phase-name">Entry</div><div class="phase-price">0.2 IMD</div><div class="phase-diff">16 leading-zero bits</div></article>
-        <article class="phase-card" data-phase="2"><span class="phase-dot"></span><div class="phase-no">PHASE 02</div><div class="phase-name">Signal</div><div class="phase-price">0.5 IMD</div><div class="phase-diff">18 leading-zero bits</div></article>
-        <article class="phase-card" data-phase="3"><span class="phase-dot"></span><div class="phase-no">PHASE 03</div><div class="phase-name">Trace</div><div class="phase-price">0.8 IMD</div><div class="phase-diff">20 leading-zero bits</div></article>
-        <article class="phase-card" data-phase="4"><span class="phase-dot"></span><div class="phase-no">PHASE 04</div><div class="phase-name">Vector</div><div class="phase-price">1.1 IMD</div><div class="phase-diff">22 leading-zero bits</div></article>
-        <article class="phase-card" data-phase="5"><span class="phase-dot"></span><div class="phase-no">PHASE 05</div><div class="phase-name">Blackout</div><div class="phase-price">1.5 IMD</div><div class="phase-diff">24 leading-zero bits</div></article>
-        <article class="phase-card" data-phase="6"><span class="phase-dot"></span><div class="phase-no">PHASE 06</div><div class="phase-name">Unknown</div><div class="phase-price">2.0 IMD</div><div class="phase-diff">26 leading-zero bits</div></article>
-      </div>
+    <div class="step-grid">
+      <article class="step-card"><span>01</span><h3>MINE</h3><p>Run the current SHA-256 puzzle locally with CPU or WebGPU.</p></article>
+      <article class="step-card"><span>02</span><h3>PROVE</h3><p>The browser checks the solution before it ever asks your wallet to mint.</p></article>
+      <article class="step-card"><span>03</span><h3>MINT</h3><p>Approve the current IMD price and call the NFT contract directly.</p></article>
+      <article class="step-card"><span>04</span><h3>REVEAL</h3><p>Your unique artwork ID is assigned on-chain and the tokenURI resolves immediately.</p></article>
     </div>
   </section>
 
-  <section class="section panel">
-    <div class="section-head">
-      <div><div class="kicker">Mining terminal</div><div class="section-title">Find the next proof.</div></div>
-      <div class="section-note">CPU + WebGPU · browser-side compute</div>
+  <section class="page-section dark-band">
+    <div class="section-heading">
+      <div><span class="kicker">PHASE SYSTEM</span><h2>Difficulty rises as the supply moves.</h2></div>
+      <span class="section-note">LIVE STATE IS READ FROM THE CONTRACT</span>
     </div>
-    <div class="ribbon">
-      <div><strong id="mintedRibbon">The next operator is waiting.</strong><span id="mintedRibbonSub">Connect a wallet to inspect the live round.</span></div>
-      <span class="pill" id="reveal">INSTANT</span>
-    </div>
-
-    <div class="mining-layout">
-      <div class="terminal">
-        <div class="terminal-top"><span class="terminal-title">LIVE CHAIN STATE</span><span class="terminal-state">ON-CHAIN</span></div>
-        <div class="terminal-grid">
-          <div class="stat"><div class="label">Minted</div><div id="minted" class="value">—</div></div>
-          <div class="stat"><div class="label">Remaining</div><div id="remaining" class="value">—</div></div>
-          <div class="stat"><div class="label">Next NFT</div><div id="token" class="value">—</div></div>
-          <div class="stat"><div class="label">Phase</div><div id="phase" class="value">—</div></div>
-          <div class="stat"><div class="label">Price</div><div id="price" class="value">—</div></div>
-          <div class="stat"><div class="label">PoW Difficulty</div><div id="difficulty" class="value">—</div></div>
-          <div class="stat"><div class="label">Wallet IMD</div><div id="balance" class="value">—</div></div>
-          <div class="stat"><div class="label">Work Seed</div><div id="work" class="value">—</div></div>
-        </div>
-        <div class="terminal-actions">
-          <button id="mineCpu" class="primary" disabled>⛏ Mine with CPU</button>
-          <button id="mineGpu" class="action-main" disabled>⚡ Mine with GPU</button>
-          <button id="stop" class="action-main" disabled>Stop</button>
-        </div>
-        <div id="status" class="mining-status">Connect your wallet to begin.</div>
-      </div>
-
-      <aside class="target">
-        <div class="target-top"><span>COLLECTION SIGNAL</span><span>1,111</span></div>
-        <div class="target-preview">
-          <img class="preview-img" src="https://raw.githubusercontent.com/Shakir120795/unknown-/main/collection/images_hd/25.png" alt="UNKNOWN operator collection preview" loading="lazy">
-        </div>
-        <div class="target-footer">
-          <div class="target-chip"><small>Mint order</small><strong>Sequential #0001 → #1111</strong></div>
-          <div class="target-chip"><small>Reveal</small><strong>Immediate at mint</strong></div>
-        </div>
-      </aside>
+    <div class="phase-strip">
+      <div><small>01</small><b>ENTRY</b><span>0.2 IMD · 16 bits</span></div>
+      <div><small>02</small><b>SIGNAL</b><span>0.5 IMD · 18 bits</span></div>
+      <div><small>03</small><b>TRACE</b><span>0.8 IMD · 20 bits</span></div>
+      <div><small>04</small><b>VECTOR</b><span>1.1 IMD · 22 bits</span></div>
+      <div><small>05</small><b>BLACKOUT</b><span>1.5 IMD · 24 bits</span></div>
+      <div><small>06</small><b>UNKNOWN</b><span>2.0 IMD · 26 bits</span></div>
     </div>
   </section>
 
-  <section class="section panel">
-    <div class="section-head">
-      <div><div class="kicker">Mint / reveal</div><div class="section-title">Proof becomes ownership.</div></div>
-      <div class="section-note">No backend · no mint signer</div>
+  <section class="page-section collection-callout">
+    <div class="callout-copy">
+      <span class="kicker">THE COLLECTION</span>
+      <h2>1,111 unique assignments. No pre-reveal queue.</h2>
+      <p>Artwork is selected on-chain from a draw-without-replacement pool. Every successful mint receives its own artwork assignment immediately after confirmation.</p>
+      <div class="hero-buttons">
+        <a class="btn btn-primary" href="./collection.html">EXPLORE ARTWORK</a>
+        <a class="btn btn-ghost" href="https://opensea.io/assets/ethereum/0x02508985edA13BFBC0917eC9F9F02045448C3c40/1" target="_blank" rel="noopener noreferrer">OPEN OPENSEA ↗</a>
+      </div>
     </div>
-    <div class="mint-layout">
-      <div class="mint-copy">
-        <h3>Mine → Prove → Mint → Reveal.</h3>
-        <p id="mintStatus">A valid proof prepares the IMD approval if needed, submits the mint transaction, assigns a unique artwork, and opens the minted token on OpenSea.</p>
-        <div class="mint-points">
-          <div class="mint-point"><b>Wallet-bound PoW</b><span>Proof is tied to your address</span></div>
-          <div class="mint-point"><b>Rising difficulty</b><span>Every phase gets harder</span></div>
-          <div class="mint-point"><b>Direct settlement</b><span>Payment + mint on-chain</span></div>
-          <div class="mint-point"><b>Instant reveal</b><span>Your artwork is assigned at mint</span></div>
-        </div>
-      </div>
-      <div class="reveal-box">
-        <div class="big">✓</div>
-        <div class="mono">No sellout reveal step. Each successful mint gets a unique artwork ID immediately, and its tokenURI points to the corresponding IPFS metadata as soon as the transaction is confirmed.</div>
-      </div>
+    <div class="mini-grid">
+      <img src="https://raw.githubusercontent.com/Shakir120795/unknown-/main/collection/images_hd/2.png" alt="">
+      <img src="https://raw.githubusercontent.com/Shakir120795/unknown-/main/collection/images_hd/25.png" alt="">
+      <img src="https://raw.githubusercontent.com/Shakir120795/unknown-/main/collection/images_hd/88.png" alt="">
+      <img src="https://raw.githubusercontent.com/Shakir120795/unknown-/main/collection/images_hd/177.png" alt="">
     </div>
   </section>
-
-  <div class="footer"><b>UNKNOWN</b> — Mine → Prove → Mint → Reveal · SHA-256 proof verification and artwork assignment are enforced by the smart contract.</div>
 </main>
-<script type="module" src="./config.js"></script>
-<script type="module" src="./src/app.js"></script>
+
+<footer class="site-footer">
+  <div><b>UNKNOWN</b><span>Mine → Prove → Mint → Reveal</span></div>
+  <div><a href="./mint.html">MINT</a><a href="./collection.html">COLLECTION</a><a href="./faq.html">FAQ</a><a href="https://etherscan.io/address/0x02508985edA13BFBC0917eC9FfA02045448C3c40" target="_blank" rel="noopener noreferrer">CONTRACT ↗</a></div>
+</footer>
 </body>
 </html>
