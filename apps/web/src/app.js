@@ -150,6 +150,62 @@ async function refresh() {
   $('mintedRibbonSub').textContent = Number(minted) >= 1111 ? 'Every minted NFT was revealed at mint.' : `${Number(remaining)} NFTs remain · Phase ${phaseNumber} · ${difficulty} difficulty bits · instant reveal`;
 }
 
+async function mineCpuWorkers(args, work, controller, startedAt) {
+  return await new Promise((resolve, reject) => {
+    const count = Math.max(1, Math.min(8, Number(navigator.hardwareConcurrency || 4) - 1));
+    const workers = [];
+    let totalHashes = 0n;
+    let settled = false;
+    const prefix = Array.from(buildPowInput({...args, nonce:0}));
+    const stopAll = () => {
+      for (const w of workers) w.terminate();
+      controller.signal.removeEventListener('abort', stop);
+    };
+    const stop = () => {
+      if (!settled) {
+        settled = true;
+        stopAll();
+        reject(new Error('MINING_ABORTED'));
+      }
+    };
+    controller.signal.addEventListener('abort', stop, {once:true});
+    for (let i = 0; i < count; i++) {
+      const worker = new Worker(new URL('./cpu-miner-worker.js', import.meta.url), {type:'module'});
+      workers.push(worker);
+      worker.onmessage = e => {
+        if (e.data.type === 'progress') {
+          totalHashes += BigInt(e.data.hashes) - BigInt(worker._lastHashes || 0);
+          worker._lastHashes = e.data.hashes;
+          const elapsedSec = Math.max(0.001, (performance.now() - startedAt) / 1000);
+          setStatus(`CPU verification fallback · ${count} workers · ${formatCompact(totalHashes)} · ${formatCompact(Number(totalHashes) / elapsedSec)}/s`);
+        }
+        if (e.data.type === 'solution' && !settled) {
+          settled = true;
+          stopAll();
+          resolve(e.data);
+        }
+      };
+      worker.onerror = e => {
+        if (!settled) {
+          settled = true;
+          stopAll();
+          reject(e.error || new Error('CPU_WORKER_ERROR'));
+        }
+      };
+      worker.postMessage({
+        type:'start',
+        prefixBytes:prefix,
+        startNonce:String(i),
+        step:String(count),
+        difficultyBits:work.difficultyBits,
+        seedBlock:work.seedBlock.toString(),
+        challenge:work.challenge,
+        tokenId:work.tokenId.toString()
+      });
+    }
+  });
+}
+
 async function start(kind) {
   if (!nft || !wallet) return;
   controller?.abort(); controller = new AbortController();
@@ -193,6 +249,11 @@ async function start(kind) {
       seedBlock: work.seedBlock, tokenId: work.tokenId, wallet, difficultyBits: work.difficultyBits };
     if (kind === 'gpu') {
       result = await mineGpu({...args, signal:controller.signal, onProgress:p => setStatus(`GPU mining · ${formatCompact(p.hashes)} · ${formatCompact(Number(p.hashes) / Math.max(0.001, (performance.now() - miningStartedAt) / 1000))}/s`)});
+      const gpuCandidateHash = proofHash({...args, nonce:result.nonce});
+      if (!validDifficulty(gpuCandidateHash, work.difficultyBits)) {
+        setStatus('GPU candidate failed verification; switching to CPU verification fallback…', 'err');
+        result = await mineCpuWorkers(args, work, controller, miningStartedAt);
+      }
     } else {
       result = await new Promise((resolve,reject)=>{
         const count = Math.max(1, Math.min(8, Number(navigator.hardwareConcurrency || 4) - 1));
