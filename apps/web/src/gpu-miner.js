@@ -11,8 +11,7 @@ const K = array<u32,64>(
 0x19a4c116u,0x1e376c08u,0x2748774cu,0x34b0bcb5u,0x391c0cb3u,0x4ed8aa4au,0x5b9cca4fu,0x682e6ff3u,
 0x748f82eeu,0x78a5636fu,0x84c87814u,0x8cc70208u,0x90befffau,0xa4506cebu,0xbef9a3f7u,0xc67178f2u);
 
-struct Params { prefix: array<u32,26>, baseLo:u32, baseHi:u32, difficulty:u32 };
-@group(0) @binding(0) var<storage,read> p: Params;
+@group(0) @binding(0) var<storage,read> p: array<u32,29>;
 @group(0) @binding(1) var<storage,read_write> out: array<atomic<u32>,11>;
 
 fn rotr(x:u32,n:u32)->u32 { return (x>>n)|(x<<(32u-n)); }
@@ -34,13 +33,13 @@ fn meets(w:array<u32,8>, bits:u32)->bool {
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid:vec3<u32>) {
   let idx = gid.x;
-  let lo = p.baseLo + idx;
+  let lo = p[26u] + idx;
   let carry = select(0u, 1u, lo < p.baseLo);
-  let hi = p.baseHi + carry;
+  let hi = p[27u] + carry;
 
   // SHA-256 block 0 (first 64 bytes of the fixed 112-byte preimage).
   var w1 = array<u32,64>();
-  for(var i:u32=0u;i<16u;i++){ w1[i]=p.prefix[i]; }
+  for(var i:u32=0u;i<16u;i++){ w1[i]=p[i]; }
   for(var i:u32=16u;i<64u;i++){ w1[i]=G1(w1[i-2u])+w1[i-7u]+G0(w1[i-15u])+w1[i-16u]; }
 
   var A:u32=0x6a09e667u; var B:u32=0xbb67ae85u; var C:u32=0x3c6ef372u; var D:u32=0xa54ff53au;
@@ -70,7 +69,7 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>) {
   }
 
   let digest=array<u32,8>(A+sA,B+sB,C+sC,D+sD,E+sE,F+sF,G+sG,H+sH);
-  if(meets(digest,p.difficulty)){
+  if(meets(digest,p[28u])){
     let old = atomicMin(&out[0], idx);
     if(idx <= old){
       atomicStore(&out[1], lo); atomicStore(&out[2], hi);
