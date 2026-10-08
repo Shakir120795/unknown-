@@ -156,15 +156,31 @@ async function start(kind) {
   await refresh();
   if (!readProvider) readProvider = new JsonRpcProvider(CONFIG.rpcUrl);
   const readNft = new Contract(NFT_ADDRESS, NFT_ABI, readProvider);
-  if (Number(await readNft.totalMinted()) >= 1111) return setStatus('Sold out.');
-  const currentWork = await readNft.currentWork();
+
+  // Mirror the contract's currentWork() exactly without relying on an eth_call that can
+  // return empty revert data on some public RPCs: seedBlock = latestBlock - 1.
+  const latestNumber = await readProvider.getBlockNumber();
+  if (latestNumber < 1) throw new Error('CHAIN_NOT_READY');
+  const seedBlock = latestNumber - 1;
+  const seed = await readProvider.getBlock(seedBlock);
+  if (!seed?.hash) throw new Error('SEED_BLOCK_UNAVAILABLE');
+
+  const minted = await readNft.totalMinted();
+  const phase = await readNft.currentPhase();
+  const [price, difficulty] = await Promise.all([
+    readNft.phasePrice(phase),
+    readNft.phaseDifficultyBits(phase)
+  ]);
+  if (Number(minted) >= 1111) return setStatus('Sold out.');
+
+  const expectedTokenId = BigInt(minted) + 1n;
   work = {
-    seedBlock: BigInt(currentWork[0]),
-    challenge: currentWork[1],
-    tokenId: BigInt(currentWork[2]),
-    phase: currentWork[3],
-    price: currentWork[4],
-    difficultyBits: Number(currentWork[5])
+    seedBlock: BigInt(seedBlock),
+    challenge: seed.hash,
+    tokenId: expectedTokenId,
+    phase,
+    price,
+    difficultyBits: Number(difficulty)
   };
   $('work').textContent = `Seed block ${work.seedBlock} · ${work.difficultyBits} bits`;
   $('mineCpu').disabled = true; $('mineGpu').disabled = true; $('stop').disabled = false;
