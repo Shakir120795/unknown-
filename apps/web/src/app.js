@@ -63,16 +63,36 @@ async function connect(requestAccounts = true) {
   const address = accounts?.[0];
   if (!address) throw new Error('No wallet account is connected to this site.');
 
-  const network = await provider.getNetwork();
+  const chainHex = await provider.send('eth_chainId', []);
+  const chainId = Number.parseInt(chainHex, 16);
   setConnectedUi(address);
 
-  if (Number(network.chainId) !== CONFIG.chainId) {
-    setStatus('Wrong network. Switch to Ethereum Mainnet (chain ' + CONFIG.chainId + ').', 'err');
-    $('mineCpu').disabled = true;
-    $('mineGpu').disabled = true;
-    return;
+  if (chainId !== CONFIG.chainId) {
+    if (requestAccounts && chainId !== CONFIG.chainId) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x' + CONFIG.chainId.toString(16) }]
+        });
+        const switchedHex = await provider.send('eth_chainId', []);
+        const switchedId = Number.parseInt(switchedHex, 16);
+        if (switchedId !== CONFIG.chainId) {
+          throw new Error('Ethereum Mainnet switch did not complete.');
+        }
+      } catch (e) {
+        if (e?.code === 4001) throw new Error('Network switch cancelled in wallet.');
+        throw new Error('Please switch MetaMask to Ethereum Mainnet (chain 1).');
+      }
+    } else {
+      setStatus('Wrong network. Switch to Ethereum Mainnet (chain ' + CONFIG.chainId + ').', 'err');
+      $('mineCpu').disabled = true;
+      $('mineGpu').disabled = true;
+      return;
+    }
   }
 
+  // Refresh the provider network after any MetaMask chain switch.
+  await provider.send('eth_chainId', []);
   signer = await provider.getSigner();
   nft = new Contract(CONFIG.nftAddress, NFT_ABI, signer);
   imd = new Contract(CONFIG.imdAddress, ERC20_ABI, signer);
