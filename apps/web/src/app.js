@@ -52,11 +52,20 @@ async function refresh() {
     nft.totalMinted(), nft.remaining(), nft.currentPhase(), nft.phasePrice(await nft.currentPhase()),
     nft.phaseDifficultyBits(await nft.currentPhase()), nft.revealed()
   ]);
+  const nextToken = BigInt(minted) + 1n;
+  const phaseNumber = Number(phase);
   $('minted').textContent = minted.toString(); $('remaining').textContent = remaining.toString();
-  $('phase').textContent = `Phase ${phase}`; $('token').textContent = `#${(BigInt(minted)+1n).toString()}`;
+  $('phase').textContent = `Phase ${phase}`; $('token').textContent = `#${nextToken.toString().padStart(4,'0')}`;
   $('price').textContent = `${formatUnits(price, CONFIG.imdDecimals)} IMD`;
   $('difficulty').textContent = `${difficulty} bits`;
   $('reveal').textContent = revealed ? 'REVEALED' : 'HIDDEN';
+  document.querySelectorAll('[data-phase]').forEach(el => {
+    const n = Number(el.dataset.phase);
+    el.classList.toggle('active', n === phaseNumber);
+    el.classList.toggle('done', n < phaseNumber);
+  });
+  $('mintedRibbon').textContent = Number(minted) >= 1111 ? 'Collection sold out.' : `Operator #${nextToken.toString().padStart(4,'0')} is waiting.`;
+  $('mintedRibbonSub').textContent = Number(minted) >= 1111 ? 'Reveal is permissionless on-chain.' : `${Number(remaining)} NFTs remain · Phase ${phaseNumber} · ${difficulty} difficulty bits`;
 }
 
 async function start(kind) {
