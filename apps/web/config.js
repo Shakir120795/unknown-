@@ -4,5 +4,6 @@ window.UNKNOWN_CONFIG = {
   imdAddress: '0xd34a99bc0f67aE1bbd63C660e6d0b0dd03E263B7',
   imdDecimals: 18,
   explorer: 'https://etherscan.io',
+  rpcUrl: 'https://ethereum-rpc.publicnode.com',
   rpcHint: 'Ethereum Mainnet'
 };
