@@ -6,7 +6,7 @@ let ctx = null;
 function writeNonce(message, nonce) {
   const out = message.slice();
   let n = BigInt(nonce);
-  for (let i = 7; i >= 0; i--) { out[108 + i] = Number(n & 0xffn); n >>= 8n; }
+  for (let i = 7; i >= 0; i--) { out[104 + i] = Number(n & 0xffn); n >>= 8n; }
   return out;
 }
 
