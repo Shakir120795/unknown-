@@ -8,14 +8,17 @@ const rpc = process.env.RPC_URL;
 const key = process.env.DEPLOYER_PRIVATE_KEY;
 const imd = process.env.IMD_TOKEN_ADDRESS;
 const treasury = process.env.TREASURY_ADDRESS;
-const hiddenURI = process.env.HIDDEN_BASE_URI;
-const revealedURI = process.env.REVEALED_BASE_URI;
+const metadataURI = process.env.REVEALED_BASE_URI;
 const provenanceHash = process.env.PROVENANCE_HASH;
 const prices = (process.env.PHASE_PRICES || '0.2,0.5,0.8,1.1,1.5,2.0').split(',').map(v=>v.trim());
 const diffs = (process.env.PHASE_DIFFICULTY_BITS || '16,18,20,22,24,26').split(',').map(v=>Number(v.trim()));
 const decimals = Number(process.env.IMD_DECIMALS || 18);
-if (!rpc||!key||!imd||!treasury||!hiddenURI||!revealedURI||!provenanceHash) throw new Error('Set RPC_URL, DEPLOYER_PRIVATE_KEY, IMD_TOKEN_ADDRESS, TREASURY_ADDRESS, HIDDEN_BASE_URI, REVEALED_BASE_URI, PROVENANCE_HASH');
-if (prices.length!==6||diffs.length!==6||diffs.some((n,i)=>!Number.isInteger(n)||n<=0||n>248||(i>0&&n<=diffs[i-1]))) throw new Error('PHASE_DIFFICULTY_BITS must contain six strictly increasing values');
+if (!rpc||!key||!imd||!treasury||!metadataURI||!provenanceHash) {
+  throw new Error('Set RPC_URL, DEPLOYER_PRIVATE_KEY, IMD_TOKEN_ADDRESS, TREASURY_ADDRESS, REVEALED_BASE_URI, PROVENANCE_HASH');
+}
+if (prices.length!==6||diffs.length!==6||diffs.some((n,i)=>!Number.isInteger(n)||n<=0||n>248||(i>0&&n<=diffs[i-1]))) {
+  throw new Error('PHASE_DIFFICULTY_BITS must contain six strictly increasing values');
+}
 const provider=new ethers.JsonRpcProvider(rpc);
 const actualNetwork=await provider.getNetwork();
 if(Number(actualNetwork.chainId)!==chainId) throw new Error(`RPC chain mismatch: expected ${chainId}, got ${actualNetwork.chainId}`);
@@ -33,11 +36,14 @@ const factory=new ethers.ContractFactory(artifact.abi,artifact.bytecode,wallet);
 const priceUnits=prices.map(v=>ethers.parseUnits(v,decimals));
 console.log('Network:',network,'Chain:',chainId,'Deployer:',wallet.address);
 console.log('IMD:',imd,'Treasury:',treasury);
-const nft=await factory.deploy(imd,treasury,hiddenURI,revealedURI,provenanceHash,priceUnits,diffs);
+console.log('Metadata:',metadataURI);
+const nft=await factory.deploy(imd,treasury,metadataURI,provenanceHash,priceUnits,diffs);
 await nft.waitForDeployment();
 const address=await nft.getAddress();
 console.log('UNKNOWN_CONTRACT_ADDRESS='+address);
 for(let i=1;i<=6;i++) console.log(`phase${i}: ${prices[i-1]} IMD / ${diffs[i-1]} bits`);
-fs.writeFileSync(path.resolve(`deployment-${network}.json`), JSON.stringify({network,chainId,address,imdToken:imd,treasury,hiddenURI,revealedURI,provenanceHash,prices,decimals,difficultyBits:diffs},null,2)+'\n');
+fs.writeFileSync(path.resolve(`deployment-${network}.json`), JSON.stringify({
+  network,chainId,address,imdToken:imd,treasury,metadataURI,provenanceHash,prices,decimals,difficultyBits:diffs
+},null,2)+'\n');
 console.log(`Wrote deployment-${network}.json`);
 console.log('Publish the address to the web config only after the deployment is verified.');

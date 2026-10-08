@@ -20,7 +20,7 @@
       <div>
         <div class="eyebrow">Anonymous collection <span>·</span> mined on-chain <span>·</span> 0/1111</div>
         <h1 class="title">WHO<br><span class="title-accent">ARE YOU?</span></h1>
-        <p class="lead">1,111 anonymous operators. Find a SHA-256 proof with your CPU or GPU. When the proof is valid, mint the next UNKNOWN directly through the Ethereum contract in IMD — no coordinator, no private mint key.</p>
+        <p class="lead">1,111 anonymous operators. Find a SHA-256 proof with your CPU or GPU. When the proof is valid, mint the next UNKNOWN directly through the Ethereum contract in IMD — no coordinator, no private mint key. Your artwork is assigned and revealed immediately on mint.</p>
 
         <div class="hero-meta">
           <div class="meta-chip"><span class="label">Supply</span><span class="value">1,111 NFTs</span></div>
@@ -45,7 +45,7 @@
         <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
         <img src="https://raw.githubusercontent.com/Shakir120795/unknown-/main/collection/images_hd/1.png" alt="UNKNOWN collection operator artwork" loading="eager">
         <div class="portrait-tag">UNKNOWN // PREVIEW</div>
-        <div class="portrait-id">ART #001 · HIDDEN</div>
+        <div class="portrait-id">ART #001 · PREVIEW</div>
       </div>
     </div>
   </section>
@@ -74,7 +74,7 @@
     </div>
     <div class="ribbon">
       <div><strong id="mintedRibbon">The next operator is waiting.</strong><span id="mintedRibbonSub">Connect a wallet to inspect the live round.</span></div>
-      <span class="pill" id="reveal">HIDDEN</span>
+      <span class="pill" id="reveal">INSTANT</span>
     </div>
 
     <div class="mining-layout">
@@ -105,7 +105,7 @@
         </div>
         <div class="target-footer">
           <div class="target-chip"><small>Mint order</small><strong>Sequential #0001 → #1111</strong></div>
-          <div class="target-chip"><small>Reveal</small><strong>After sellout · permissionless</strong></div>
+          <div class="target-chip"><small>Reveal</small><strong>Immediate at mint</strong></div>
         </div>
       </aside>
     </div>
@@ -118,24 +118,23 @@
     </div>
     <div class="mint-layout">
       <div class="mint-copy">
-        <h3>Mine → Prove → Mint.</h3>
-        <p id="mintStatus">A valid proof automatically submits the mint transaction. Approve IMD in your wallet when requested.</p>
+        <h3>Mine → Prove → Mint → Reveal.</h3>
+        <p id="mintStatus">A valid proof prepares the IMD approval if needed, submits the mint transaction, assigns a unique artwork, and opens the minted token on OpenSea.</p>
         <div class="mint-points">
           <div class="mint-point"><b>Wallet-bound PoW</b><span>Proof is tied to your address</span></div>
           <div class="mint-point"><b>Rising difficulty</b><span>Every phase gets harder</span></div>
           <div class="mint-point"><b>Direct settlement</b><span>Payment + mint on-chain</span></div>
-          <div class="mint-point"><b>Hidden first</b><span>Reveal switches after #1111</span></div>
+          <div class="mint-point"><b>Instant reveal</b><span>Your artwork is assigned at mint</span></div>
         </div>
       </div>
       <div class="reveal-box">
-        <div class="big">?</div>
-        <div class="mono">UNKNOWN stays hidden while the supply is open. After token #1111, the collection can be revealed without a coordinator.</div>
-        <div style="margin-top:16px"><button id="revealBtn" class="action-main">Reveal After Sellout</button></div>
+        <div class="big">✓</div>
+        <div class="mono">No sellout reveal step. Each successful mint gets a unique artwork ID immediately, and its tokenURI points to the corresponding IPFS metadata as soon as the transaction is confirmed.</div>
       </div>
     </div>
   </section>
 
-  <div class="footer"><b>UNKNOWN</b> — Mine → Prove → Mint · SHA-256 proof verification is enforced by the smart contract.</div>
+  <div class="footer"><b>UNKNOWN</b> — Mine → Prove → Mint → Reveal · SHA-256 proof verification and artwork assignment are enforced by the smart contract.</div>
 </main>
 <script src="./config.js"></script>
 <script type="module" src="./src/app.js"></script>

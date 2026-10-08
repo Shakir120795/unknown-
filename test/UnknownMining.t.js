@@ -27,7 +27,7 @@ async function setup(diffs=PROD_DIFF) {
   const provenance='0x'+'11'.repeat(32);
   const nft = await NFT.deploy(
     await imd.getAddress(), treasury.address,
-    'ipfs://hidden/', 'ipfs://revealed/', provenance, PROD_PRICES, diffs
+    'ipfs://metadata/', provenance, PROD_PRICES, diffs
   );
   await imd.mint(user.address, ethers.parseEther('10000'));
   await imd.connect(user).approve(await nft.getAddress(), ethers.parseEther('10000'));
@@ -52,6 +52,7 @@ describe('UnknownMining', function () {
       expect(await c.nft.phaseDifficultyBits(i+1)).to.equal(PROD_DIFF[i]);
     }
     expect(await c.nft.provenanceHash()).to.equal(c.provenance);
+    expect(await c.nft.remainingArtCount()).to.equal(1111n);
   });
 
   it('verifies the exact browser/Node SHA-256 proof and mints directly on-chain', async function () {
@@ -63,6 +64,10 @@ describe('UnknownMining', function () {
     await expect(c.nft.connect(c.user).mint(s.work[0],s.nonce)).to.emit(c.nft,'Minted');
     expect(await c.nft.totalMinted()).to.equal(1n);
     expect(await c.nft.ownerOf(1)).to.equal(c.user.address);
+    const artId = await c.nft.artIdOf(1);
+    expect(artId).to.be.gte(1n);
+    expect(artId).to.be.lte(1111n);
+    expect(await c.nft.tokenURI(1)).to.equal(`ipfs://metadata/${artId}.json`);
     expect(await c.imd.balanceOf(c.treasury.address)).to.equal(before+PROD_PRICES[0]);
   });
 
@@ -93,18 +98,19 @@ describe('UnknownMining', function () {
     expect(await c.nft.totalMinted()).to.equal(1n);
   });
 
-  it('uses hidden metadata before sellout and permissionless reveal after sellout', async function () {
+  it('assigns a unique artwork and exposes it immediately on mint', async function () {
     const c=await setup([1,2,3,4,5,6]);
-    await expect(c.nft.reveal()).to.be.reverted;
+    const seen = new Set();
     for(let i=0;i<1111;i++){
       const s=await currentSolution(c);
       await c.nft.connect(c.user).mint(s.work[0],s.nonce);
+      const artId = (await c.nft.artIdOf(i+1)).toString();
+      expect(seen.has(artId)).to.equal(false);
+      seen.add(artId);
+      expect(await c.nft.tokenURI(i+1)).to.equal(`ipfs://metadata/${artId}.json`);
     }
+    expect(seen.size).to.equal(1111);
     expect(await c.nft.totalMinted()).to.equal(1111n);
-    expect(await c.nft.tokenURI(1)).to.equal('ipfs://hidden/1.json');
-    await c.nft.connect(c.other).reveal();
-    expect(await c.nft.revealed()).to.equal(true);
-    expect(await c.nft.tokenURI(1)).to.equal('ipfs://revealed/1.json');
-    await expect(c.nft.reveal()).to.be.reverted;
+    expect(await c.nft.remainingArtCount()).to.equal(0n);
   });
 });

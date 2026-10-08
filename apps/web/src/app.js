@@ -13,10 +13,11 @@ const NFT_ABI = [
   'function currentWork() view returns(uint256,bytes32,uint256,uint8,uint256,uint8)',
   'function isValidProof(address,uint256,uint256,uint256) view returns(bool)',
   'function mint(uint256,uint256)',
-  'function revealed() view returns(bool)',
-  'function reveal()',
+  'function artIdOf(uint256) view returns(uint256)',
+  'function tokenURI(uint256) view returns(string)',
   'function provenanceHash() view returns(bytes32)'
 ];
+
 const ERC20_ABI = [
   'function approve(address,uint256) returns(bool)',
   'function allowance(address,address) view returns(uint256)',
@@ -48,24 +49,26 @@ async function connect() {
 
 async function refresh() {
   if (!nft) return;
-  const [minted, remaining, phase, price, difficulty, revealed] = await Promise.all([
-    nft.totalMinted(), nft.remaining(), nft.currentPhase(), nft.phasePrice(await nft.currentPhase()),
-    nft.phaseDifficultyBits(await nft.currentPhase()), nft.revealed()
+  const phase = await nft.currentPhase();
+  const [minted, remaining, price, difficulty] = await Promise.all([
+    nft.totalMinted(), nft.remaining(), nft.phasePrice(phase), nft.phaseDifficultyBits(phase)
   ]);
   const nextToken = BigInt(minted) + 1n;
   const phaseNumber = Number(phase);
-  $('minted').textContent = minted.toString(); $('remaining').textContent = remaining.toString();
-  $('phase').textContent = `Phase ${phase}`; $('token').textContent = `#${nextToken.toString().padStart(4,'0')}`;
+  $('minted').textContent = minted.toString();
+  $('remaining').textContent = remaining.toString();
+  $('phase').textContent = `Phase ${phase}`;
+  $('token').textContent = `#${nextToken.toString().padStart(4,'0')}`;
   $('price').textContent = `${formatUnits(price, CONFIG.imdDecimals)} IMD`;
   $('difficulty').textContent = `${difficulty} bits`;
-  $('reveal').textContent = revealed ? 'REVEALED' : 'HIDDEN';
+  $('reveal').textContent = 'INSTANT';
   document.querySelectorAll('[data-phase]').forEach(el => {
     const n = Number(el.dataset.phase);
     el.classList.toggle('active', n === phaseNumber);
     el.classList.toggle('done', n < phaseNumber);
   });
   $('mintedRibbon').textContent = Number(minted) >= 1111 ? 'Collection sold out.' : `Operator #${nextToken.toString().padStart(4,'0')} is waiting.`;
-  $('mintedRibbonSub').textContent = Number(minted) >= 1111 ? 'Reveal is permissionless on-chain.' : `${Number(remaining)} NFTs remain · Phase ${phaseNumber} · ${difficulty} difficulty bits`;
+  $('mintedRibbonSub').textContent = Number(minted) >= 1111 ? 'Every minted NFT was revealed at mint.' : `${Number(remaining)} NFTs remain · Phase ${phaseNumber} · ${difficulty} difficulty bits · instant reveal`;
 }
 
 async function start(kind) {
@@ -116,15 +119,30 @@ async function start(kind) {
     const okLocal = validDifficulty(result.hash, work.difficultyBits) &&
       result.hash === proofHash({...args, nonce:result.nonce});
     if (!okLocal) throw new Error('LOCAL_PROOF_MISMATCH');
-    setStatus(`Valid proof found. Submitting on-chain…`, 'ok');
+    setStatus('Valid proof found. Preparing IMD payment…', 'ok');
+
+    const balance = await imd.balanceOf(wallet);
+    if (balance < work.price) throw new Error(`Insufficient IMD balance. Need ${formatUnits(work.price, CONFIG.imdDecimals)} IMD.`);
+
+    const allowance = await imd.allowance(wallet, CONFIG.nftAddress);
+    if (allowance < work.price) {
+      setMintStatus(`Approve ${formatUnits(work.price, CONFIG.imdDecimals)} IMD in your wallet…`);
+      const approveTx = await imd.approve(CONFIG.nftAddress, work.price);
+      await approveTx.wait();
+    }
+
     const onchainOk = await nft.isValidProof(wallet, work.tokenId, work.seedBlock, result.nonce);
     if (!onchainOk) throw new Error('PROOF_EXPIRED_OR_INVALID');
+
     const tx = await nft.mint(work.seedBlock, result.nonce);
     setMintStatus(`Mint transaction sent: ${tx.hash}`, 'ok');
     await tx.wait();
-    setMintStatus(`SUCCESS — UNKNOWN #${work.tokenId} minted.`, 'ok');
-    setStatus(`Winner confirmed on-chain. Token #${work.tokenId}.`, 'ok');
+
+    const artId = await nft.artIdOf(work.tokenId);
+    setMintStatus(`SUCCESS — UNKNOWN #${work.tokenId} minted · ART #${artId} revealed.`, 'ok');
+    setStatus(`Winner confirmed on-chain. Token #${work.tokenId} · Art #${artId}.`, 'ok');
     window.open(`${CONFIG.explorer}/tx/${tx.hash}`, '_blank', 'noopener');
+    window.open(`https://opensea.io/assets/ethereum/${CONFIG.nftAddress}/${work.tokenId}`, '_blank', 'noopener');
     await refresh();
   } catch (e) {
     if (controller.signal.aborted) setStatus('Mining stopped.');
@@ -144,13 +162,7 @@ $('checkBalance').onclick = async()=>{
   try { const bal=await imd.balanceOf(wallet); $('balance').textContent=`${formatUnits(bal, CONFIG.imdDecimals)} IMD`; } catch(e){ $('balance').textContent='—'; }
 };
 
-$('revealBtn').onclick = async()=>{
-  if(!nft) return;
-  try { setMintStatus('Checking reveal…'); if(!(await nft.revealed())) { const tx=await nft.reveal(); await tx.wait(); } setMintStatus('Collection revealed on-chain.', 'ok'); await refresh(); }
-  catch(e){ setMintStatus(e.shortMessage || e.message, 'err'); }
-};
-
 (function boot(){
-  $('configState').textContent = CONFIG.nftAddress && CONFIG.imdAddress ? 'Launch configuration loaded.' : 'Set VITE_CONTRACT_ADDRESS and VITE_IMD_TOKEN_ADDRESS before build.';
+  $('configState').textContent = CONFIG.nftAddress && CONFIG.imdAddress ? 'Launch configuration loaded.' : 'Set contract and IMD token addresses before build.';
   $('mineGpu').disabled=true; refresh().catch(()=>{});
 })();

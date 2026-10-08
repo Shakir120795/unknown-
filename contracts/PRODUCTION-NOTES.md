@@ -15,9 +15,12 @@
 - recent Ethereum blockhash challenge
 - stale challenge rejection after 32 blocks
 - non-reentrant mint
-- permissionless reveal after sellout
+- unique artwork draw without replacement
+- immediate per-token metadata reveal
 - collection provenance hash committed at deployment
 
-The phase configuration is fixed in the constructor and there are no owner setters for price, difficulty, treasury or metadata URIs.
+The phase configuration is fixed in the constructor and there are no owner setters for price, difficulty, treasury or metadata URI.
+
+Artwork assignment uses a draw-without-replacement pool with mint-block entropy. The assigned artwork ID is stored in `artIdOf[tokenId]` and `tokenURI(tokenId)` immediately points to that artwork's IPFS JSON.
 
 Owner control is limited to emergency pause/unpause. Operationally, use a secure owner wallet or multisig.

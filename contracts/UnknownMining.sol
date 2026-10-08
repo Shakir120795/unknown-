@@ -12,6 +12,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 /// @title UNKNOWN — Proof-of-Work NFT
 /// @notice 1,111 ERC-721 NFTs minted directly by winning SHA-256 proofs.
 /// @dev No backend, coordinator or mint signer is required. The contract verifies PoW on-chain.
+///      Each successful mint immediately receives a unique artwork assignment on-chain.
 contract UnknownMining is ERC721, Ownable, Pausable, ReentrancyGuard {
     using SafeERC20 for IERC20;
     using Strings for uint256;
@@ -25,10 +26,11 @@ contract UnknownMining is ERC721, Ownable, Pausable, ReentrancyGuard {
     bytes32 public immutable provenanceHash;
 
     uint256 public totalMinted;
-    bool public revealed;
+    uint256 public remainingArtCount = MAX_SUPPLY;
+    mapping(uint256 => uint256) private shuffledArt;
+    mapping(uint256 => uint256) public artIdOf;
 
-    string private hiddenBaseURI;
-    string private revealedBaseURI;
+    string private metadataBaseURI;
 
     mapping(uint8 => uint256) public phasePrice;
     mapping(uint8 => uint8) public phaseDifficultyBits;
@@ -40,9 +42,9 @@ contract UnknownMining is ERC721, Ownable, Pausable, ReentrancyGuard {
         uint256 seedBlock,
         uint256 nonce,
         bytes32 proofHash,
-        uint256 price
+        uint256 price,
+        uint256 artId
     );
-    event Revealed(string revealedBaseURI);
     event PausedByOwner();
     event UnpausedByOwner();
 
@@ -51,16 +53,13 @@ contract UnknownMining is ERC721, Ownable, Pausable, ReentrancyGuard {
     error InvalidSeedBlock();
     error StaleSeedBlock();
     error InvalidProof();
-    error AlreadyRevealed();
-    error NotSoldOut();
     error ZeroAddress();
     error InvalidConfig();
 
     constructor(
         address imdToken,
         address initialTreasury,
-        string memory initialHiddenBaseURI,
-        string memory initialRevealedBaseURI,
+        string memory initialMetadataBaseURI,
         bytes32 initialProvenanceHash,
         uint256[6] memory prices,
         uint8[6] memory difficultyBits
@@ -69,15 +68,12 @@ contract UnknownMining is ERC721, Ownable, Pausable, ReentrancyGuard {
         Ownable(msg.sender)
     {
         if (imdToken == address(0) || initialTreasury == address(0)) revert ZeroAddress();
-        if (bytes(initialHiddenBaseURI).length == 0 || bytes(initialRevealedBaseURI).length == 0) {
-            revert InvalidConfig();
-        }
+        if (bytes(initialMetadataBaseURI).length == 0) revert InvalidConfig();
         if (initialProvenanceHash == bytes32(0)) revert InvalidConfig();
 
         imd = IERC20(imdToken);
         treasury = initialTreasury;
-        hiddenBaseURI = initialHiddenBaseURI;
-        revealedBaseURI = initialRevealedBaseURI;
+        metadataBaseURI = initialMetadataBaseURI;
         provenanceHash = initialProvenanceHash;
 
         for (uint8 i = 0; i < 6; i++) {
@@ -156,7 +152,8 @@ contract UnknownMining is ERC721, Ownable, Pausable, ReentrancyGuard {
     }
 
     /// @notice Mine and mint the next sequential NFT with a valid SHA-256 proof.
-    /// @dev First valid transaction wins tokenId = totalMinted + 1.
+    /// @dev First valid transaction wins tokenId = totalMinted + 1. Artwork is assigned
+    ///      immediately from a draw-without-replacement pool using the mint block entropy.
     function mint(uint48 seedBlock, uint64 nonce) external nonReentrant whenNotPaused {
         if (totalMinted >= MAX_SUPPLY) revert SoldOut();
         if (seedBlock >= block.number) revert InvalidSeedBlock();
@@ -174,27 +171,12 @@ contract UnknownMining is ERC721, Ownable, Pausable, ReentrancyGuard {
         imd.safeTransferFrom(msg.sender, treasury, price);
 
         totalMinted = tokenId;
+        uint256 artId = _drawUniqueArt(tokenId, seedBlock, challenge, nonce);
+        artIdOf[tokenId] = artId;
+
         _safeMint(msg.sender, tokenId);
 
-        emit Minted(msg.sender, tokenId, phase, seedBlock, nonce, digest, price);
-    }
-
-    /// @notice Reveal becomes permissionless once all 1,111 NFTs have been minted.
-    function reveal() external {
-        if (revealed) revert AlreadyRevealed();
-        if (totalMinted != MAX_SUPPLY) revert NotSoldOut();
-        revealed = true;
-        emit Revealed(revealedBaseURI);
-    }
-
-    function pause() external onlyOwner {
-        _pause();
-        emit PausedByOwner();
-    }
-
-    function unpause() external onlyOwner {
-        _unpause();
-        emit UnpausedByOwner();
+        emit Minted(msg.sender, tokenId, phase, seedBlock, nonce, digest, price, artId);
     }
 
     function remaining() external view returns (uint256) {
@@ -203,7 +185,45 @@ contract UnknownMining is ERC721, Ownable, Pausable, ReentrancyGuard {
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         _requireOwned(tokenId);
-        return string.concat(_baseURI(), tokenId.toString(), ".json");
+        return string.concat(metadataBaseURI, artIdOf[tokenId].toString(), ".json");
+    }
+
+    function _drawUniqueArt(
+        uint256 tokenId,
+        uint48 seedBlock,
+        bytes32 challenge,
+        uint64 nonce
+    ) internal returns (uint256 artId) {
+        uint256 count = remainingArtCount;
+        if (count == 0) revert SoldOut();
+
+        uint256 entropy = uint256(
+            keccak256(
+                abi.encodePacked(
+                    block.prevrandao,
+                    challenge,
+                    msg.sender,
+                    tokenId,
+                    seedBlock,
+                    nonce
+                )
+            )
+        );
+        uint256 index = entropy % count;
+
+        uint256 chosen = shuffledArt[index];
+        if (chosen == 0) chosen = index + 1;
+
+        uint256 lastIndex = count - 1;
+        if (index != lastIndex) {
+            uint256 lastValue = shuffledArt[lastIndex];
+            if (lastValue == 0) lastValue = lastIndex + 1;
+            shuffledArt[index] = lastValue;
+        }
+        delete shuffledArt[lastIndex];
+
+        remainingArtCount = count - 1;
+        return chosen;
     }
 
     function _powHash(
@@ -237,6 +257,6 @@ contract UnknownMining is ERC721, Ownable, Pausable, ReentrancyGuard {
     }
 
     function _baseURI() internal view override returns (string memory) {
-        return revealed ? revealedBaseURI : hiddenBaseURI;
+        return metadataBaseURI;
     }
 }

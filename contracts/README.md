@@ -11,9 +11,21 @@ It uses:
 - exact 1,111 sequential token IDs
 - six fixed price phases
 - six strictly increasing difficulty phases
-- fixed hidden and revealed metadata base URIs
-- permissionless reveal after sellout
+- one immutable metadata base URI
+- unique artwork draw without replacement at mint time
+- immediate per-token reveal
 - on-chain artwork provenance hash
+
+## Mint + reveal
+
+Every successful PoW mint:
+1. pays the current IMD phase price directly to the fixed treasury;
+2. mints the next sequential token ID;
+3. draws one unused artwork ID from the 1..1111 artwork pool;
+4. stores `artIdOf[tokenId]` permanently on-chain;
+5. makes `tokenURI(tokenId)` point immediately to the assigned artwork metadata.
+
+There is no global reveal transaction and no backend mapping service.
 
 ## Proof
 
@@ -26,8 +38,7 @@ Set the real project values in the deployment environment:
 - IMD token address
 - IMD decimals
 - treasury address
-- hidden metadata CID
-- revealed metadata CID
+- metadata CID
 - artwork provenance hash
 
-Use `scripts/deploy.mjs` after the contract tests pass.
+Use `scripts/build-reveal.mjs` to build metadata files keyed by artwork ID, pin those files and the artwork images, then use `scripts/deploy.mjs` after the contract tests pass.
