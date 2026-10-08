@@ -1,16 +1,143 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>UNKNOWN — Mine → Prove → Mint</title>
-<style>
-:root{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;background:#070707;color:#f4f4f4;color-scheme:dark}
-*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at top,#171717,#070707 50%);min-height:100vh}.wrap{max-width:1000px;margin:auto;padding:28px 18px 70px}.hero,.card{border:1px solid #262626;background:rgba(18,18,18,.9);border-radius:24px;box-shadow:0 20px 60px rgba(0,0,0,.35)}.hero{padding:32px;margin-bottom:16px}.brand{display:flex;justify-content:space-between;gap:18px;align-items:flex-start}.eyebrow{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:#888}.title{font-size:clamp(44px,8vw,82px);line-height:.95;margin:10px 0;font-weight:800;letter-spacing:-.05em}.sub{color:#aaa;max-width:700px}.card{padding:22px;margin-top:16px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.stat{padding:14px;border:1px solid #252525;border-radius:16px;background:#101010}.label{font-size:12px;color:#777}.value{font-size:20px;font-weight:700;margin-top:6px}.actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}button{border:1px solid #333;background:#fff;color:#000;padding:12px 16px;border-radius:12px;font-weight:700;cursor:pointer}button.secondary{background:#111;color:#fff}button:disabled{opacity:.35;cursor:not-allowed}.status{white-space:pre-wrap;word-break:break-word;margin-top:14px;min-height:40px;color:#aaa}.ok{color:#59d98e}.err{color:#ff7272}.small{font-size:13px;color:#777}.pill{padding:7px 10px;border:1px solid #2b2b2b;border-radius:999px;color:#aaa;font-size:12px}.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.footer{margin-top:22px;color:#666;font-size:12px;text-align:center}@media(max-width:700px){.grid{grid-template-columns:repeat(2,1fr)}.hero{padding:24px}.card{padding:18px}}
-</style></head>
-<body><main class="wrap">
-<section class="hero"><div class="brand"><div><div class="eyebrow">Ethereum · Proof of Work</div><div class="title">UNKNOWN</div><div class="sub">1,111 NFTs. No coordinator. Mine a SHA-256 proof with your CPU or GPU, then mint the next token directly on-chain in IMD.</div></div><div class="bar"><span id="reveal" class="pill">HIDDEN</span><button id="connect">Connect Wallet</button></div></div><div class="small mono" id="configState"></div><div class="small mono" id="wallet">Not connected</div></section>
-<section class="card"><div class="grid">
-<div class="stat"><div class="label">Minted</div><div id="minted" class="value">—</div></div><div class="stat"><div class="label">Remaining</div><div id="remaining" class="value">—</div></div><div class="stat"><div class="label">Next NFT</div><div id="token" class="value">—</div></div><div class="stat"><div class="label">Phase</div><div id="phase" class="value">—</div></div>
-<div class="stat"><div class="label">Price</div><div id="price" class="value">—</div></div><div class="stat"><div class="label">PoW Difficulty</div><div id="difficulty" class="value">—</div></div><div class="stat"><div class="label">Wallet IMD</div><div id="balance" class="value">—</div></div><div class="stat"><div class="label">Work Seed</div><div id="work" class="value">—</div></div>
-</div><div class="actions"><button id="checkBalance" class="secondary">Check IMD Balance</button><button id="mineCpu" disabled>Mine with CPU</button><button id="mineGpu" disabled>Mine with GPU</button><button id="stop" class="secondary" disabled>Stop</button></div><div id="status" class="status">Connect your wallet to begin.</div></section>
-<section class="card"><div class="eyebrow">Mint / Reveal</div><div id="mintStatus" class="status">A valid proof automatically submits the mint transaction. Approve IMD when your wallet asks.</div><div class="actions"><button id="revealBtn" class="secondary">Reveal After Sellout</button></div><div class="small">Reveal is permissionless and only succeeds after NFT #1111 is minted.</div></section>
-<div class="footer">UNKNOWN — Mine → Prove → Mint · PoW verification is enforced by the smart contract.</div>
-</main><script src="./config.js"></script><script type="module" src="./src/app.js"></script></body></html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#070807">
+  <meta name="description" content="UNKNOWN — 1,111 anonymous operators. Mine SHA-256 proof with CPU or GPU, then mint the next NFT directly on Ethereum.">
+  <title>UNKNOWN — Proof of Work NFT</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<main class="wrap">
+  <div class="topbar">
+    <div class="brandmark"><span class="brand-dot"></span><span>UNKNOWN // 1111 OPERATORS</span></div>
+    <div class="network"><span class="live-dot"></span><span>Ethereum Mainnet · PoW</span></div>
+  </div>
+
+  <section class="hero panel">
+    <div class="hero-copy">
+      <div>
+        <div class="eyebrow">Anonymous collection <span>·</span> mined on-chain <span>·</span> 0/1111</div>
+        <h1 class="title">WHO<br><span class="title-accent">ARE YOU?</span></h1>
+        <p class="lead">1,111 anonymous operators. Find a SHA-256 proof with your CPU or GPU. When the proof is valid, mint the next UNKNOWN directly through the Ethereum contract in IMD — no coordinator, no private mint key.</p>
+
+        <div class="hero-meta">
+          <div class="meta-chip"><span class="label">Supply</span><span class="value">1,111 NFTs</span></div>
+          <div class="meta-chip"><span class="label">Algorithm</span><span class="value">SHA-256 PoW</span></div>
+          <div class="meta-chip"><span class="label">Mint Model</span><span class="value">Permissionless</span></div>
+        </div>
+
+        <div class="hero-actions">
+          <button id="connect" class="primary">Connect Wallet</button>
+          <button id="checkBalance" class="action-main">Check IMD Balance</button>
+        </div>
+
+        <div class="status-row">
+          <span id="configState">Loading launch configuration…</span>
+          <span id="wallet" class="wallet-pill">Not connected</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="hero-right">
+      <div class="portrait-frame">
+        <span class="corner tl"></span><span class="corner tr"></span><span class="corner bl"></span><span class="corner br"></span>
+        <img src="https://raw.githubusercontent.com/Shakir120795/unknown-/main/collection/images_hd/1.png" alt="UNKNOWN collection operator artwork" loading="eager">
+        <div class="portrait-tag">UNKNOWN // PREVIEW</div>
+        <div class="portrait-id">ART #001 · HIDDEN</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section panel">
+    <div class="section-head">
+      <div><div class="kicker">Progression</div><div class="section-title">Six phases. Rising difficulty.</div></div>
+      <div class="section-note">The chain decides the current phase</div>
+    </div>
+    <div class="phases">
+      <div class="phase-grid">
+        <article class="phase-card" data-phase="1"><span class="phase-dot"></span><div class="phase-no">PHASE 01</div><div class="phase-name">Entry</div><div class="phase-price">0.2 IMD</div><div class="phase-diff">16 leading-zero bits</div></article>
+        <article class="phase-card" data-phase="2"><span class="phase-dot"></span><div class="phase-no">PHASE 02</div><div class="phase-name">Signal</div><div class="phase-price">0.5 IMD</div><div class="phase-diff">18 leading-zero bits</div></article>
+        <article class="phase-card" data-phase="3"><span class="phase-dot"></span><div class="phase-no">PHASE 03</div><div class="phase-name">Trace</div><div class="phase-price">0.8 IMD</div><div class="phase-diff">20 leading-zero bits</div></article>
+        <article class="phase-card" data-phase="4"><span class="phase-dot"></span><div class="phase-no">PHASE 04</div><div class="phase-name">Vector</div><div class="phase-price">1.1 IMD</div><div class="phase-diff">22 leading-zero bits</div></article>
+        <article class="phase-card" data-phase="5"><span class="phase-dot"></span><div class="phase-no">PHASE 05</div><div class="phase-name">Blackout</div><div class="phase-price">1.5 IMD</div><div class="phase-diff">24 leading-zero bits</div></article>
+        <article class="phase-card" data-phase="6"><span class="phase-dot"></span><div class="phase-no">PHASE 06</div><div class="phase-name">Unknown</div><div class="phase-price">2.0 IMD</div><div class="phase-diff">26 leading-zero bits</div></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section panel">
+    <div class="section-head">
+      <div><div class="kicker">Mining terminal</div><div class="section-title">Find the next proof.</div></div>
+      <div class="section-note">CPU + WebGPU · browser-side compute</div>
+    </div>
+    <div class="ribbon">
+      <div><strong id="mintedRibbon">The next operator is waiting.</strong><span id="mintedRibbonSub">Connect a wallet to inspect the live round.</span></div>
+      <span class="pill" id="reveal">HIDDEN</span>
+    </div>
+
+    <div class="mining-layout">
+      <div class="terminal">
+        <div class="terminal-top"><span class="terminal-title">LIVE CHAIN STATE</span><span class="terminal-state">ON-CHAIN</span></div>
+        <div class="terminal-grid">
+          <div class="stat"><div class="label">Minted</div><div id="minted" class="value">—</div></div>
+          <div class="stat"><div class="label">Remaining</div><div id="remaining" class="value">—</div></div>
+          <div class="stat"><div class="label">Next NFT</div><div id="token" class="value">—</div></div>
+          <div class="stat"><div class="label">Phase</div><div id="phase" class="value">—</div></div>
+          <div class="stat"><div class="label">Price</div><div id="price" class="value">—</div></div>
+          <div class="stat"><div class="label">PoW Difficulty</div><div id="difficulty" class="value">—</div></div>
+          <div class="stat"><div class="label">Wallet IMD</div><div id="balance" class="value">—</div></div>
+          <div class="stat"><div class="label">Work Seed</div><div id="work" class="value">—</div></div>
+        </div>
+        <div class="terminal-actions">
+          <button id="mineCpu" class="primary" disabled>⛏ Mine with CPU</button>
+          <button id="mineGpu" class="action-main" disabled>⚡ Mine with GPU</button>
+          <button id="stop" class="action-main" disabled>Stop</button>
+        </div>
+        <div id="status" class="mining-status">Connect your wallet to begin.</div>
+      </div>
+
+      <aside class="target">
+        <div class="target-top"><span>COLLECTION SIGNAL</span><span>1,111</span></div>
+        <div class="target-preview">
+          <img class="preview-img" src="https://raw.githubusercontent.com/Shakir120795/unknown-/main/collection/images_hd/25.png" alt="UNKNOWN operator collection preview" loading="lazy">
+        </div>
+        <div class="target-footer">
+          <div class="target-chip"><small>Mint order</small><strong>Sequential #0001 → #1111</strong></div>
+          <div class="target-chip"><small>Reveal</small><strong>After sellout · permissionless</strong></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="section panel">
+    <div class="section-head">
+      <div><div class="kicker">Mint / reveal</div><div class="section-title">Proof becomes ownership.</div></div>
+      <div class="section-note">No backend · no mint signer</div>
+    </div>
+    <div class="mint-layout">
+      <div class="mint-copy">
+        <h3>Mine → Prove → Mint.</h3>
+        <p id="mintStatus">A valid proof automatically submits the mint transaction. Approve IMD in your wallet when requested.</p>
+        <div class="mint-points">
+          <div class="mint-point"><b>Wallet-bound PoW</b><span>Proof is tied to your address</span></div>
+          <div class="mint-point"><b>Rising difficulty</b><span>Every phase gets harder</span></div>
+          <div class="mint-point"><b>Direct settlement</b><span>Payment + mint on-chain</span></div>
+          <div class="mint-point"><b>Hidden first</b><span>Reveal switches after #1111</span></div>
+        </div>
+      </div>
+      <div class="reveal-box">
+        <div class="big">?</div>
+        <div class="mono">UNKNOWN stays hidden while the supply is open. After token #1111, the collection can be revealed without a coordinator.</div>
+        <div style="margin-top:16px"><button id="revealBtn" class="action-main">Reveal After Sellout</button></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="footer"><b>UNKNOWN</b> — Mine → Prove → Mint · SHA-256 proof verification is enforced by the smart contract.</div>
+</main>
+<script src="./config.js"></script>
+<script type="module" src="./src/app.js"></script>
+</body>
+</html>
