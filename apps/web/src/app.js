@@ -241,6 +241,13 @@ async function refreshWalletBalance() {
     return;
   }
   try {
+    // Prefer the connected wallet provider when available. This avoids browser CORS/RPC
+    // issues on public RPC endpoints and reads the exact connected account.
+    if (imd) {
+      const bal = await imd.balanceOf(wallet);
+      $('balance').textContent = formatUnits(bal, CONFIG.imdDecimals) + ' IMD';
+      return;
+    }
     if (!readProvider) readProvider = new JsonRpcProvider(CONFIG.rpcUrl);
     const readImd = new Contract(CONFIG.imdAddress, ERC20_ABI, readProvider);
     const bal = await readImd.balanceOf(wallet);
