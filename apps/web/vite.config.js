@@ -9,7 +9,8 @@ export default defineConfig({
         mint: resolve(__dirname, 'mint.html'),
         collection: resolve(__dirname, 'collection.html'),
         howItWorks: resolve(__dirname, 'how-it-works.html'),
-        faq: resolve(__dirname, 'faq.html')
+        faq: resolve(__dirname, 'faq.html'),
+        staking: resolve(__dirname, 'staking.html')
       }
     }
   }
