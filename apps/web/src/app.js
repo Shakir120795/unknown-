@@ -2,7 +2,7 @@ import { BrowserProvider, Contract, JsonRpcProvider, formatUnits } from 'ethers'
 import { buildPowInput, proofHash, validDifficulty } from './pow.js';
 import { hasWebGPU, mineGpu } from './gpu-miner.js';
 
-const CONFIG = window.UNKNOWN_CONFIG || { chainId: 1, nftAddress: '', imdAddress: '', imdDecimals: 18, explorer: 'https://etherscan.io' };
+const CONFIG = window.UNKNOWN_CONFIG || { chainId: 1, nftAddress: '', imdAddress: '', imdDecimals: 18, explorer: 'https://etherscan.io', rpcUrl: 'https://ethereum-rpc.publicnode.com' };
 
 const NFT_ABI = [
   'function totalMinted() view returns(uint256)',
@@ -99,6 +99,7 @@ async function connect(requestAccounts = true) {
   imd = new Contract(CONFIG.imdAddress, ERC20_ABI, signer);
   $('mineCpu').disabled = false;
   $('mineGpu').disabled = !(await hasWebGPU());
+  await refreshWalletBalance();
 
   try {
     await refresh();
@@ -169,7 +170,7 @@ async function start(kind) {
         const stop=()=>{ if(!settled){ settled=true; stopAll(); reject(new Error('MINING_ABORTED')); } };
         controller.signal.addEventListener('abort', stop, {once:true});
         for(let i=0;i<count;i++){
-          const worker = new Worker('./cpu-miner-worker.js', {type:'module'}); workers.push(worker);
+          const worker = new Worker(new URL('./cpu-miner-worker.js', import.meta.url), {type:'module'}); workers.push(worker);
           worker.onmessage=e=>{
             if(e.data.type==='progress'){ totalHashes += BigInt(e.data.hashes)-BigInt(worker._lastHashes||0); worker._lastHashes=e.data.hashes; setStatus(`CPU mining · ${count} workers · ${totalHashes.toString()} hashes`); }
             if(e.data.type==='solution' && !settled){ settled=true; stopAll(); resolve(e.data); }
@@ -234,9 +235,24 @@ if (window.ethereum?.on) {
   });
 }
 
+async function refreshWalletBalance() {
+  if (!wallet) {
+    $('balance').textContent = '—';
+    return;
+  }
+  try {
+    if (!readProvider) readProvider = new JsonRpcProvider(CONFIG.rpcUrl);
+    const readImd = new Contract(CONFIG.imdAddress, ERC20_ABI, readProvider);
+    const bal = await readImd.balanceOf(wallet);
+    $('balance').textContent = formatUnits(bal, CONFIG.imdDecimals) + ' IMD';
+  } catch (e) {
+    console.warn('IMD_BALANCE_READ_ERROR', e);
+    $('balance').textContent = '—';
+  }
+}
+
 $('checkBalance').onclick = async()=>{
-  if(!imd || !wallet) return;
-  try { const bal=await imd.balanceOf(wallet); $('balance').textContent=`${formatUnits(bal, CONFIG.imdDecimals)} IMD`; } catch(e){ $('balance').textContent='—'; }
+  await refreshWalletBalance();
 };
 
 (async function boot(){
@@ -261,5 +277,6 @@ $('checkBalance').onclick = async()=>{
   }
   window.setInterval(() => {
     refresh().catch(e => console.warn('LIVE_REFRESH_ERROR', e));
+    refreshWalletBalance().catch(e => console.warn('IMD_BALANCE_REFRESH_ERROR', e));
   }, 12000);
 })();
