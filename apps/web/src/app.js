@@ -32,19 +32,60 @@ function setStatus(msg, cls='') { $('status').textContent = msg; $('status').cla
 function setMintStatus(msg, cls='') { $('mintStatus').textContent = msg; $('mintStatus').className=cls; }
 function short(addr) { return addr ? `${addr.slice(0,6)}…${addr.slice(-4)}` : ''; }
 
-async function connect() {
+function setConnectedUi(address) {
+  wallet = address;
+  $('wallet').textContent = short(address);
+  $('connect').textContent = 'Connected';
+  $('connect').disabled = true;
+}
+
+function setDisconnectedUi() {
+  wallet = null;
+  signer = null;
+  nft = null;
+  imd = null;
+  $('wallet').textContent = 'Not connected';
+  $('connect').textContent = 'Connect Wallet';
+  $('connect').disabled = false;
+  $('mineCpu').disabled = true;
+  $('mineGpu').disabled = true;
+  $('balance').textContent = '—';
+  setStatus('Connect your wallet to begin.');
+}
+
+async function connect(requestAccounts = true) {
   if (!window.ethereum) throw new Error('Install MetaMask or another EVM wallet.');
-  provider = new BrowserProvider(window.ethereum);
-  await provider.send('eth_requestAccounts', []);
+  if (!provider) provider = new BrowserProvider(window.ethereum);
+
+  const accounts = requestAccounts
+    ? await provider.send('eth_requestAccounts', [])
+    : await provider.send('eth_accounts', []);
+  const address = accounts?.[0];
+  if (!address) throw new Error('No wallet account is connected to this site.');
+
   const network = await provider.getNetwork();
-  if (Number(network.chainId) !== CONFIG.chainId) throw new Error(`Wrong network. Switch to chain ${CONFIG.chainId}.`);
-  signer = await provider.getSigner(); wallet = await signer.getAddress();
+  setConnectedUi(address);
+
+  if (Number(network.chainId) !== CONFIG.chainId) {
+    setStatus('Wrong network. Switch to Ethereum Mainnet (chain ' + CONFIG.chainId + ').', 'err');
+    $('mineCpu').disabled = true;
+    $('mineGpu').disabled = true;
+    return;
+  }
+
+  signer = await provider.getSigner();
   nft = new Contract(CONFIG.nftAddress, NFT_ABI, signer);
   imd = new Contract(CONFIG.imdAddress, ERC20_ABI, signer);
-  $('wallet').textContent = short(wallet);
-  $('connect').textContent = 'Connected'; $('connect').disabled = true;
-  $('mineCpu').disabled = false; $('mineGpu').disabled = !(await hasWebGPU());
-  await refresh();
+  $('mineCpu').disabled = false;
+  $('mineGpu').disabled = !(await hasWebGPU());
+
+  try {
+    await refresh();
+    setStatus('Wallet connected. Ready to mine.', 'ok');
+  } catch (e) {
+    console.error('CHAIN_REFRESH_ERROR', e);
+    setStatus('Wallet connected, but chain data could not be loaded: ' + (e.shortMessage || e.message || 'unknown error'), 'err');
+  }
 }
 
 async function refresh() {
@@ -152,17 +193,39 @@ async function start(kind) {
   }
 }
 
-$('connect').onclick = () => connect().catch(e=>setStatus(e.message,'err'));
+$('connect').onclick = () => connect(true).catch(e=>setStatus(e.message || 'Wallet connection failed.', 'err'));
 $('mineCpu').onclick = () => start('cpu');
 $('mineGpu').onclick = () => start('gpu');
 $('stop').onclick = () => { controller?.abort(); $('stop').disabled=true; };
+
+if (window.ethereum?.on) {
+  window.ethereum.on('accountsChanged', accounts => {
+    if (!accounts?.length) setDisconnectedUi();
+    else connect(false).catch(e => setStatus(e.message || 'Wallet reconnect failed.', 'err'));
+  });
+  window.ethereum.on('chainChanged', () => {
+    setDisconnectedUi();
+    setStatus('Network changed. Reconnecting…');
+    connect(false).catch(e => setStatus(e.message || 'Network reconnect failed.', 'err'));
+  });
+}
 
 $('checkBalance').onclick = async()=>{
   if(!imd || !wallet) return;
   try { const bal=await imd.balanceOf(wallet); $('balance').textContent=`${formatUnits(bal, CONFIG.imdDecimals)} IMD`; } catch(e){ $('balance').textContent='—'; }
 };
 
-(function boot(){
+(async function boot(){
   $('configState').textContent = CONFIG.nftAddress && CONFIG.imdAddress ? 'Launch configuration loaded.' : 'Set contract and IMD token addresses before build.';
-  $('mineGpu').disabled=true; refresh().catch(()=>{});
+  $('mineCpu').disabled=true; $('mineGpu').disabled=true;
+  if (window.ethereum?.on) {
+    try {
+      if (!provider) provider = new BrowserProvider(window.ethereum);
+      const accounts = await provider.send('eth_accounts', []);
+      if (accounts?.[0]) await connect(false);
+    } catch (e) {
+      console.warn('WALLET_RESTORE_ERROR', e);
+    }
+  }
+  refresh().catch(()=>{});
 })();
