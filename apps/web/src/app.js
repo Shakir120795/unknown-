@@ -3,6 +3,8 @@ import { buildPowInput, proofHash, validDifficulty } from './pow.js';
 import { hasWebGPU, mineGpu } from './gpu-miner.js';
 
 const CONFIG = window.UNKNOWN_CONFIG || { chainId: 1, nftAddress: '', imdAddress: '', imdDecimals: 18, explorer: 'https://etherscan.io', rpcUrl: 'https://ethereum-rpc.publicnode.com' };
+const NFT_ADDRESS = String(CONFIG.nftAddress || '').toLowerCase();
+const IMD_ADDRESS = String(CONFIG.imdAddress || '').toLowerCase();
 
 const NFT_ABI = [
   'function totalMinted() view returns(uint256)',
@@ -106,8 +108,8 @@ async function connect(requestAccounts = true) {
   // Refresh the provider network after any MetaMask chain switch.
   await provider.send('eth_chainId', []);
   signer = await provider.getSigner();
-  nft = new Contract(CONFIG.nftAddress, NFT_ABI, signer);
-  imd = new Contract(CONFIG.imdAddress, ERC20_ABI, signer);
+  nft = new Contract(NFT_ADDRESS, NFT_ABI, signer);
+  imd = new Contract(IMD_ADDRESS, ERC20_ABI, signer);
   $('mineCpu').disabled = false;
   $('mineGpu').disabled = !(await hasWebGPU());
   await refreshWalletBalance();
@@ -123,7 +125,7 @@ async function connect(requestAccounts = true) {
 
 async function refresh() {
   if (!readProvider) readProvider = new JsonRpcProvider(CONFIG.rpcUrl);
-  const readNft = new Contract(CONFIG.nftAddress, NFT_ABI, readProvider);
+  const readNft = new Contract(NFT_ADDRESS, NFT_ABI, readProvider);
   const sourceNft = nft || readNft;
   if (!sourceNft) return;
   const phase = await sourceNft.currentPhase();
@@ -153,14 +155,14 @@ async function start(kind) {
   controller?.abort(); controller = new AbortController();
   await refresh();
   if (Number((await nft.totalMinted())) >= 1111) return setStatus('Sold out.');
-  const latest = await provider.getBlock('latest');
+  const currentWork = await nft.currentWork();
   work = {
-    seedBlock: BigInt(latest.number),
-    challenge: latest.hash,
-    tokenId: (await nft.totalMinted()) + 1n,
-    phase: await nft.currentPhase(),
-    price: await nft.phasePrice(await nft.currentPhase()),
-    difficultyBits: Number(await nft.phaseDifficultyBits(await nft.currentPhase()))
+    seedBlock: BigInt(currentWork[0]),
+    challenge: currentWork[1],
+    tokenId: BigInt(currentWork[2]),
+    phase: currentWork[3],
+    price: currentWork[4],
+    difficultyBits: Number(currentWork[5])
   };
   $('work').textContent = `Seed block ${work.seedBlock} · ${work.difficultyBits} bits`;
   $('mineCpu').disabled = true; $('mineGpu').disabled = true; $('stop').disabled = false;
@@ -169,7 +171,7 @@ async function start(kind) {
 
   try {
     let result;
-    const args = { chainId: CONFIG.chainId, contractAddress: CONFIG.nftAddress, challenge: work.challenge,
+    const args = { chainId: CONFIG.chainId, contractAddress: NFT_ADDRESS, challenge: work.challenge,
       seedBlock: work.seedBlock, tokenId: work.tokenId, wallet, difficultyBits: work.difficultyBits };
     if (kind === 'gpu') {
       result = await mineGpu({...args, signal:controller.signal, onProgress:p => setStatus(`GPU mining · ${formatCompact(p.hashes)} · ${formatCompact(Number(p.hashes) / Math.max(0.001, (performance.now() - miningStartedAt) / 1000))}/s`)});
@@ -262,7 +264,7 @@ async function refreshWalletBalance() {
       return;
     }
     if (!readProvider) readProvider = new JsonRpcProvider(CONFIG.rpcUrl);
-    const readImd = new Contract(CONFIG.imdAddress, ERC20_ABI, readProvider);
+    const readImd = new Contract(IMD_ADDRESS, ERC20_ABI, readProvider);
     const bal = await readImd.balanceOf(wallet);
     $('balance').textContent = formatUnits(bal, CONFIG.imdDecimals) + ' IMD';
   } catch (e) {
