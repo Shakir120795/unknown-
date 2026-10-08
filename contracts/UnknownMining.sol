@@ -171,12 +171,22 @@ contract UnknownMining is ERC721, Ownable, Pausable, ReentrancyGuard {
         imd.safeTransferFrom(msg.sender, treasury, price);
 
         totalMinted = tokenId;
-        uint256 artId = _drawUniqueArt(tokenId, seedBlock, challenge, nonce);
+        uint256 artId = _drawUniqueArt(tokenId, seedBlock, challenge);
         artIdOf[tokenId] = artId;
 
         _safeMint(msg.sender, tokenId);
 
         emit Minted(msg.sender, tokenId, phase, seedBlock, nonce, digest, price, artId);
+    }
+
+    function pause() external onlyOwner {
+        _pause();
+        emit PausedByOwner();
+    }
+
+    function unpause() external onlyOwner {
+        _unpause();
+        emit UnpausedByOwner();
     }
 
     function remaining() external view returns (uint256) {
@@ -191,8 +201,7 @@ contract UnknownMining is ERC721, Ownable, Pausable, ReentrancyGuard {
     function _drawUniqueArt(
         uint256 tokenId,
         uint48 seedBlock,
-        bytes32 challenge,
-        uint64 nonce
+        bytes32 challenge
     ) internal returns (uint256 artId) {
         uint256 count = remainingArtCount;
         if (count == 0) revert SoldOut();
@@ -204,8 +213,7 @@ contract UnknownMining is ERC721, Ownable, Pausable, ReentrancyGuard {
                     challenge,
                     msg.sender,
                     tokenId,
-                    seedBlock,
-                    nonce
+                    seedBlock
                 )
             )
         );
