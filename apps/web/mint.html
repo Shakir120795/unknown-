@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="description" content="UNKNOWN mint terminal — browser-side SHA-256 proof of work and direct Ethereum minting in IMD.">
+  <title>UNKNOWN — Mint</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+<header class="site-header">
+  <div class="nav-shell">
+    <a class="brand" href="./index.html"><span class="brand-dot"></span><span>UNKNOWN</span><small>// 1111 OPERATORS</small></a>
+    <nav class="nav-tabs" aria-label="Main navigation">
+      <a href="./index.html">HOME</a><a class="active" href="./mint.html">MINT</a><a href="./collection.html">COLLECTION</a><a href="./how-it-works.html">HOW IT WORKS</a><a href="./faq.html">FAQ</a>
+      <a class="nav-opensea" href="https://opensea.io/assets/ethereum/0x02508985edA13BFBC0917eC9FfA02045448C3c40/1" target="_blank" rel="noopener noreferrer">OPENSEA ↗</a>
+    </nav>
+    <button id="connect" class="nav-wallet">CONNECT WALLET</button>
+  </div>
+</header>
+
+<main class="mint-page">
+  <section class="page-hero compact">
+    <div><span class="eyebrow"><span>LIVE</span> · ETHEREUM MAINNET</span><h1>MINT TERMINAL</h1><p>Find the current proof, verify it locally, then settle the mint directly on-chain.</p></div>
+    <div class="hero-status"><span id="configState">Loading launch configuration…</span><strong id="wallet">Not connected</strong></div>
+  </section>
+
+  <section class="terminal-section">
+    <div class="terminal-head"><div><span class="kicker">LIVE CHAIN STATE</span><h2>Current round</h2></div><span class="terminal-state">ON-CHAIN</span></div>
+    <div class="terminal-grid">
+      <div class="stat"><span>Minted</span><b id="minted">—</b></div>
+      <div class="stat"><span>Remaining</span><b id="remaining">—</b></div>
+      <div class="stat"><span>Next NFT</span><b id="token">—</b></div>
+      <div class="stat"><span>Phase</span><b id="phase">—</b></div>
+      <div class="stat"><span>Price</span><b id="price">—</b></div>
+      <div class="stat"><span>PoW Difficulty</span><b id="difficulty">—</b></div>
+      <div class="stat"><span>Wallet IMD</span><b id="balance">—</b></div>
+      <div class="stat"><span>Work Seed</span><b id="work">—</b></div>
+    </div>
+    <div class="mint-actions">
+      <button id="mineCpu" class="btn btn-primary" disabled>⛏ MINE WITH CPU</button>
+      <button id="mineGpu" class="btn btn-ghost" disabled>⚡ MINE WITH GPU</button>
+      <button id="stop" class="btn btn-danger" disabled>STOP</button>
+      <button id="checkBalance" class="btn btn-ghost">CHECK IMD BALANCE</button>
+    </div>
+    <div id="status" class="live-message">Connect your wallet to begin.</div>
+  </section>
+
+  <section class="mint-grid">
+    <article class="info-card">
+      <span class="kicker">THE NEXT MINT</span>
+      <h2 id="mintedRibbon">The next operator is waiting.</h2>
+      <p id="mintedRibbonSub">Connect a wallet to inspect the live round.</p>
+      <span class="instant-pill" id="reveal">INSTANT</span>
+    </article>
+    <article class="info-card">
+      <span class="kicker">MINT / REVEAL</span>
+      <h2>Proof becomes ownership.</h2>
+      <p id="mintStatus">A valid proof prepares the IMD approval if needed, submits the mint transaction, assigns a unique artwork, and opens the minted token on OpenSea.</p>
+      <div class="bullet-row"><b>Wallet-bound</b><span>Proof is tied to your address.</span></div>
+      <div class="bullet-row"><b>Rising difficulty</b><span>Every phase gets harder.</span></div>
+      <div class="bullet-row"><b>Direct settlement</b><span>Payment and mint execute on-chain.</span></div>
+      <div class="bullet-row"><b>Instant reveal</b><span>Artwork assignment happens at mint.</span></div>
+    </article>
+  </section>
+</main>
+
+<footer class="site-footer"><div><b>UNKNOWN</b><span>Contract: 0x0250…C3c40</span></div><div><a href="https://etherscan.io/address/0x02508985edA13BFBC0917eC9FfA02045448C3c40" target="_blank" rel="noopener noreferrer">ETHERSCAN ↗</a><a href="https://opensea.io/assets/ethereum/0x02508985edA13BFBC0917eC9FfA02045448C3c40/1" target="_blank" rel="noopener noreferrer">OPENSEA ↗</a></div></footer>
+<script type="module" src="./config.js"></script>
+<script type="module" src="./src/app.js"></script>
+</body>
+</html>
