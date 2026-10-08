@@ -32,6 +32,17 @@ function setStatus(msg, cls='') { $('status').textContent = msg; $('status').cla
 function setMintStatus(msg, cls='') { $('mintStatus').textContent = msg; $('mintStatus').className=cls; }
 function short(addr) { return addr ? `${addr.slice(0,6)}…${addr.slice(-4)}` : ''; }
 
+function formatCompact(value) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return '0 H';
+  if (n >= 1e15) return `${(n / 1e15).toFixed(2)} PH`;
+  if (n >= 1e12) return `${(n / 1e12).toFixed(2)} TH`;
+  if (n >= 1e9) return `${(n / 1e9).toFixed(2)} GH`;
+  if (n >= 1e6) return `${(n / 1e6).toFixed(2)} MH`;
+  if (n >= 1e3) return `${(n / 1e3).toFixed(2)} KH`;
+  return `${Math.round(n)} H`;
+}
+
 function setConnectedUi(address) {
   wallet = address;
   $('wallet').textContent = short(address);
@@ -153,6 +164,7 @@ async function start(kind) {
   };
   $('work').textContent = `Seed block ${work.seedBlock} · ${work.difficultyBits} bits`;
   $('mineCpu').disabled = true; $('mineGpu').disabled = true; $('stop').disabled = false;
+  const miningStartedAt = performance.now();
   setStatus(`${kind.toUpperCase()} mining NFT ${work.tokenId}…`);
 
   try {
@@ -160,7 +172,7 @@ async function start(kind) {
     const args = { chainId: CONFIG.chainId, contractAddress: CONFIG.nftAddress, challenge: work.challenge,
       seedBlock: work.seedBlock, tokenId: work.tokenId, wallet, difficultyBits: work.difficultyBits };
     if (kind === 'gpu') {
-      result = await mineGpu({...args, signal:controller.signal, onProgress:p => setStatus(`GPU mining · ${Number(p.hashes).toLocaleString()} hashes`)});
+      result = await mineGpu({...args, signal:controller.signal, onProgress:p => setStatus(`GPU mining · ${formatCompact(p.hashes)} · ${formatCompact(Number(p.hashes) / Math.max(0.001, (performance.now() - miningStartedAt) / 1000))}/s`)});
     } else {
       result = await new Promise((resolve,reject)=>{
         const count = Math.max(1, Math.min(8, Number(navigator.hardwareConcurrency || 4) - 1));
@@ -172,7 +184,8 @@ async function start(kind) {
         for(let i=0;i<count;i++){
           const worker = new Worker(new URL('./cpu-miner-worker.js', import.meta.url), {type:'module'}); workers.push(worker);
           worker.onmessage=e=>{
-            if(e.data.type==='progress'){ totalHashes += BigInt(e.data.hashes)-BigInt(worker._lastHashes||0); worker._lastHashes=e.data.hashes; setStatus(`CPU mining · ${count} workers · ${totalHashes.toString()} hashes`); }
+            if(e.data.type==='progress'){ totalHashes += BigInt(e.data.hashes)-BigInt(worker._lastHashes||0); worker._lastHashes=e.data.hashes; const elapsedSec = Math.max(0.001, (performance.now() - miningStartedAt) / 1000);
+              setStatus(`CPU mining · ${count} workers · ${formatCompact(totalHashes)} · ${formatCompact(Number(totalHashes) / elapsedSec)}/s`); }
             if(e.data.type==='solution' && !settled){ settled=true; stopAll(); resolve(e.data); }
           };
           worker.onerror=e=>{ if(!settled){ settled=true; stopAll(); reject(e.error||new Error('CPU_WORKER_ERROR')); } };
