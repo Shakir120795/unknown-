@@ -5,6 +5,7 @@ import { hasWebGPU, mineGpu } from './gpu-miner.js';
 const CONFIG = window.UNKNOWN_CONFIG || { chainId: 1, nftAddress: '', imdAddress: '', imdDecimals: 18, explorer: 'https://etherscan.io', rpcUrl: 'https://ethereum-rpc.publicnode.com' };
 const NFT_ADDRESS = String(CONFIG.nftAddress || '').toLowerCase();
 const IMD_ADDRESS = String(CONFIG.imdAddress || '').toLowerCase();
+const WALLET_DISCONNECTED_KEY = 'unknown-wallet-app-disconnected';
 
 const NFT_ABI = [
   'function totalMinted() view returns(uint256)',
@@ -48,17 +49,19 @@ function formatCompact(value) {
 function setConnectedUi(address) {
   wallet = address;
   $('wallet').textContent = short(address);
-  $('connect').textContent = 'Connected';
-  $('connect').disabled = true;
+  localStorage.removeItem(WALLET_DISCONNECTED_KEY);
+  $('connect').textContent = 'DISCONNECT WALLET';
+  $('connect').disabled = false;
 }
 
-function setDisconnectedUi() {
+function setDisconnectedUi(markLocallyDisconnected = false) {
+  if (markLocallyDisconnected) localStorage.setItem(WALLET_DISCONNECTED_KEY, '1');
   wallet = null;
   signer = null;
   nft = null;
   imd = null;
   $('wallet').textContent = 'Not connected';
-  $('connect').textContent = 'Connect Wallet';
+  $('connect').textContent = 'CONNECT WALLET';
   $('connect').disabled = false;
   $('mineCpu').disabled = true;
   $('mineGpu').disabled = true;
@@ -68,6 +71,7 @@ function setDisconnectedUi() {
 
 async function connect(requestAccounts = true) {
   if (!window.ethereum) throw new Error('Install MetaMask or another EVM wallet.');
+  if (requestAccounts) localStorage.removeItem(WALLET_DISCONNECTED_KEY);
   if (!provider) provider = new BrowserProvider(window.ethereum);
   if (!readProvider) readProvider = new JsonRpcProvider(CONFIG.rpcUrl);
 
@@ -326,18 +330,31 @@ async function start(kind) {
   }
 }
 
-$('connect').onclick = () => connect(true).catch(e=>setStatus(e.message || 'Wallet connection failed.', 'err'));
+$('connect').onclick = () => {
+  if (wallet) {
+    controller?.abort();
+    setDisconnectedUi(true);
+    setStatus('Disconnected in this app. To revoke MetaMask site access, disconnect this site in MetaMask settings.');
+    return;
+  }
+  localStorage.removeItem(WALLET_DISCONNECTED_KEY);
+  connect(true).catch(e=>setStatus(e.message || 'Wallet connection failed.', 'err'));
+};
 $('mineCpu').onclick = () => start('cpu');
 $('mineGpu').onclick = () => start('gpu');
 $('stop').onclick = () => { controller?.abort(); $('stop').disabled=true; };
 
 if (window.ethereum?.on) {
   window.ethereum.on('accountsChanged', accounts => {
-    if (!accounts?.length) setDisconnectedUi();
-    else connect(false).catch(e => setStatus(e.message || 'Wallet reconnect failed.', 'err'));
+    if (!accounts?.length) setDisconnectedUi(true);
+    else if (localStorage.getItem(WALLET_DISCONNECTED_KEY) !== '1') connect(false).catch(e => setStatus(e.message || 'Wallet reconnect failed.', 'err'));
   });
   window.ethereum.on('chainChanged', () => {
-    setDisconnectedUi();
+    if (localStorage.getItem(WALLET_DISCONNECTED_KEY) === '1') {
+      setDisconnectedUi(false);
+      return;
+    }
+    setDisconnectedUi(false);
     setStatus('Network changed. Reconnecting…');
     connect(false).catch(e => setStatus(e.message || 'Network reconnect failed.', 'err'));
   });
@@ -385,7 +402,8 @@ $('checkBalance').onclick = async()=>{
     try {
       provider = provider || new BrowserProvider(window.ethereum);
       const accounts = await provider.send('eth_accounts', []);
-      if (accounts?.[0]) await connect(false);
+      if (accounts?.[0] && localStorage.getItem(WALLET_DISCONNECTED_KEY) !== '1') await connect(false);
+      else setDisconnectedUi(false);
     } catch (e) {
       console.warn('WALLET_RESTORE_ERROR', e);
     }
