@@ -154,8 +154,10 @@ async function start(kind) {
   if (!nft || !wallet) return;
   controller?.abort(); controller = new AbortController();
   await refresh();
-  if (Number((await nft.totalMinted())) >= 1111) return setStatus('Sold out.');
-  const currentWork = await nft.currentWork();
+  if (!readProvider) readProvider = new JsonRpcProvider(CONFIG.rpcUrl);
+  const readNft = new Contract(NFT_ADDRESS, NFT_ABI, readProvider);
+  if (Number(await readNft.totalMinted()) >= 1111) return setStatus('Sold out.');
+  const currentWork = await readNft.currentWork();
   work = {
     seedBlock: BigInt(currentWork[0]),
     challenge: currentWork[1],
@@ -210,7 +212,7 @@ async function start(kind) {
       'ok'
     );
 
-    const onchainOk = await nft.isValidProof(wallet, work.tokenId, work.seedBlock, result.nonce);
+    const onchainOk = await readNft.isValidProof(wallet, work.tokenId, work.seedBlock, result.nonce);
     if (!onchainOk) {
       throw new Error(
         localValid
@@ -221,10 +223,11 @@ async function start(kind) {
 
     setStatus('Proof accepted by contract. Preparing IMD payment…', 'ok');
 
-    const balance = await imd.balanceOf(wallet);
+    const readImd = new Contract(IMD_ADDRESS, ERC20_ABI, readProvider);
+    const balance = await readImd.balanceOf(wallet);
     if (balance < work.price) throw new Error(`Insufficient IMD balance. Need ${formatUnits(work.price, CONFIG.imdDecimals)} IMD.`);
 
-    const allowance = await imd.allowance(wallet, CONFIG.nftAddress);
+    const allowance = await imd.allowance(wallet, NFT_ADDRESS);
     if (allowance < work.price) {
       setMintStatus(`Approve ${formatUnits(work.price, CONFIG.imdDecimals)} IMD in your wallet…`);
       const approveTx = await imd.approve(CONFIG.nftAddress, work.price);
@@ -243,7 +246,11 @@ async function start(kind) {
     await refresh();
   } catch (e) {
     if (controller.signal.aborted) setStatus('Mining stopped.');
-    else { console.error(e); setStatus(e.shortMessage || e.message || 'Mining failed.', 'err'); }
+    else {
+      console.error('MINING_ERROR', e);
+      const reason = e?.shortMessage || e?.reason || e?.info?.error?.message || e?.message || 'Mining failed.';
+      setStatus(reason, 'err');
+    }
   } finally {
     $('mineCpu').disabled = false; $('mineGpu').disabled = !(await hasWebGPU()); $('stop').disabled = true;
   }
