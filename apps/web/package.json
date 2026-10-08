@@ -4,8 +4,10 @@
   "type": "module",
   "version": "1.0.0",
   "scripts": {
-    "dev": "python3 -m http.server 3000",
-    "serve": "python3 -m http.server 3000"
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite",
+    "serve": "vite --host 0.0.0.0",
+    "preview": "vite preview --host 0.0.0.0"
   },
   "dependencies": {
     "ethers": "^6.15.0"
