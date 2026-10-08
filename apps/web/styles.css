@@ -22,3 +22,4 @@
 .lock-body:after{content:'';position:absolute;width:4px;height:10px;background:#10140f;border-radius:3px;left:15px;top:8px}
 .staking-overlay h2{font-weight:1000;text-shadow:0 2px 22px rgba(0,0,0,.55)}
 @media(max-width:700px){.staking-nav small{top:-6px;right:-4px;font-size:4.5px}.staking-lock:after{background-attachment:scroll}.lock-icon{width:64px;height:64px}.lock-shackle{width:22px;height:21px;top:12px}.lock-body{width:31px;height:25px;top:31px}.lock-body:after{left:13.5px;top:7px}}
+.nav-wallet.wallet-connected{background:#10160e;color:var(--accent);border-color:#566d40;cursor:pointer}.nav-wallet.wallet-connected:hover{background:#151d12}
