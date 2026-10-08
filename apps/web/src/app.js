@@ -197,10 +197,29 @@ async function start(kind) {
       });
     }
     if (controller.signal.aborted) throw new Error('MINING_ABORTED');
-    const okLocal = validDifficulty(result.hash, work.difficultyBits) &&
-      result.hash === proofHash({...args, nonce:result.nonce});
-    if (!okLocal) throw new Error('LOCAL_PROOF_MISMATCH');
-    setStatus('Valid proof found. Preparing IMD payment…', 'ok');
+
+    // The smart contract is the final authority. Recompute locally for diagnostics,
+    // then verify the candidate nonce directly with the deployed contract before payment.
+    const recomputedHash = proofHash({...args, nonce: result.nonce});
+    const localValid = validDifficulty(recomputedHash, work.difficultyBits);
+    const hashMatchesWorker = result.hash === recomputedHash;
+    setStatus(
+      localValid && hashMatchesWorker
+        ? 'Valid proof found. Confirming on-chain…'
+        : 'Candidate found. Confirming proof on-chain…',
+      'ok'
+    );
+
+    const onchainOk = await nft.isValidProof(wallet, work.tokenId, work.seedBlock, result.nonce);
+    if (!onchainOk) {
+      throw new Error(
+        localValid
+          ? 'PROOF_REJECTED_ONCHAIN'
+          : 'PROOF_HASH_MISMATCH'
+      );
+    }
+
+    setStatus('Proof accepted by contract. Preparing IMD payment…', 'ok');
 
     const balance = await imd.balanceOf(wallet);
     if (balance < work.price) throw new Error(`Insufficient IMD balance. Need ${formatUnits(work.price, CONFIG.imdDecimals)} IMD.`);
@@ -211,9 +230,6 @@ async function start(kind) {
       const approveTx = await imd.approve(CONFIG.nftAddress, work.price);
       await approveTx.wait();
     }
-
-    const onchainOk = await nft.isValidProof(wallet, work.tokenId, work.seedBlock, result.nonce);
-    if (!onchainOk) throw new Error('PROOF_EXPIRED_OR_INVALID');
 
     const tx = await nft.mint(work.seedBlock, result.nonce);
     setMintStatus(`Mint transaction sent: ${tx.hash}`, 'ok');
