@@ -24,7 +24,7 @@ const actualNetwork=await provider.getNetwork();
 if(Number(actualNetwork.chainId)!==chainId) throw new Error(`RPC chain mismatch: expected ${chainId}, got ${actualNetwork.chainId}`);
 const imdCode=await provider.getCode(imd);
 if(imdCode==='0x') throw new Error('IMD_TOKEN_ADDRESS has no contract code on the selected network');
-const imdContract=new ethers.Contract(imd,'function decimals() view returns(uint8)',provider);
+const imdContract=new ethers.Contract(imd,['function decimals() view returns(uint8)'],provider);
 const actualDecimals=Number(await imdContract.decimals());
 if(actualDecimals!==decimals) throw new Error(`IMD decimals mismatch: configured ${decimals}, token reports ${actualDecimals}`);
 if(!/^0x[0-9a-fA-F]{64}$/.test(provenanceHash)) throw new Error('PROVENANCE_HASH must be a 32-byte hex value');
@@ -44,6 +44,6 @@ console.log('UNKNOWN_CONTRACT_ADDRESS='+address);
 for(let i=1;i<=6;i++) console.log(`phase${i}: ${prices[i-1]} IMD / ${diffs[i-1]} bits`);
 fs.writeFileSync(path.resolve(`deployment-${network}.json`), JSON.stringify({
   network,chainId,address,imdToken:imd,treasury,metadataURI,provenanceHash,prices,decimals,difficultyBits:diffs
-},null,2)+'\n');
+},null,2)+'\\n');
 console.log(`Wrote deployment-${network}.json`);
 console.log('Publish the address to the web config only after the deployment is verified.');
