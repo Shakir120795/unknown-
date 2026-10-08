@@ -1,4 +1,4 @@
-import { staticPrefixWords } from './pow.js';
+import { proofHash, staticPrefixWords } from './pow.js';
 
 const SHADER = /* wgsl */ `
 const K = array<u32,64>(
@@ -137,7 +137,11 @@ export async function mineGpu({ chainId, contractAddress, challenge, seedBlock, 
       onProgress?.({ hashes: BigInt(batches*BATCH).toString(), nonce: nonce.toString(), elapsedMs: Math.round(performance.now()-started) });
       if (result[0] !== 0xffffffff) {
         const winningNonce = nonce + BigInt(result[0]);
-        return { nonce: winningNonce.toString(), hash: hashFromWords(result), hashes: BigInt(batches*BATCH).toString(), elapsedMs: Math.round(performance.now()-started) };
+        // The winner index is atomic; the digest slots are intentionally ignored because
+        // multiple winning invocations can race when writing non-atomic digest words.
+        // Recompute the winning digest with the reference implementation for exact parity.
+        const winningHash = proofHash({ chainId, contractAddress, challenge, seedBlock, tokenId, wallet, nonce: winningNonce });
+        return { nonce: winningNonce.toString(), hash: winningHash, hashes: BigInt(batches*BATCH).toString(), elapsedMs: Math.round(performance.now()-started) };
       }
       nonce += BigInt(BATCH);
     }
