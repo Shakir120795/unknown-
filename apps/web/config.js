@@ -5,5 +5,6 @@ window.UNKNOWN_CONFIG = {
   imdDecimals: 18,
   explorer: 'https://etherscan.io',
   rpcUrl: 'https://ethereum-rpc.publicnode.com',
+  walletConnectProjectId: '', // Add your Reown project ID to enable WalletConnect QR/mobile pairing
   rpcHint: 'Ethereum Mainnet'
 };
