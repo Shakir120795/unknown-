@@ -23,3 +23,23 @@
 .staking-overlay h2{font-weight:1000;text-shadow:0 2px 22px rgba(0,0,0,.55)}
 @media(max-width:700px){.staking-nav small{top:-6px;right:-4px;font-size:4.5px}.staking-lock:after{background-attachment:scroll}.lock-icon{width:64px;height:64px}.lock-shackle{width:22px;height:21px;top:12px}.lock-body{width:31px;height:25px;top:31px}.lock-body:after{left:13.5px;top:7px}}
 .nav-wallet.wallet-connected{background:#10160e;color:var(--accent);border-color:#566d40;cursor:pointer}.nav-wallet.wallet-connected:hover{background:#151d12}
+
+/* Universal wallet picker */
+.wallet-picker-overlay{position:fixed;inset:0;z-index:10000;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.76);backdrop-filter:blur(10px)}
+.wallet-picker{width:min(100%,440px);max-height:min(84vh,720px);overflow:auto;padding:26px;border:1px solid #394637;border-radius:20px;background:linear-gradient(155deg,#121913,#080a08 72%);box-shadow:0 28px 100px rgba(0,0,0,.65)}
+.wallet-picker h2{font-size:30px;letter-spacing:-.04em;margin:0 0 9px}
+.wallet-picker>p{color:#99a29a;font-size:13px;line-height:1.55;margin-bottom:20px}
+.wallet-picker-options{display:grid;gap:9px}
+.wallet-choice{width:100%;min-height:48px;border:1px solid #2c382d;border-radius:11px;padding:12px 15px;text-align:left;background:#0d120e;color:#eef1ec;font-size:13px;font-weight:850;cursor:pointer}
+.wallet-choice:hover,.wallet-choice:focus-visible{border-color:#9bfa27;background:#151d12;outline:none}
+.wallet-choice-featured{border-color:#526a3c;color:#b6ff67;background:#11190e}
+.wallet-picker-cancel{width:100%;margin-top:12px;min-height:43px;border:0;border-radius:10px;background:transparent;color:#8c968d;font-weight:800;cursor:pointer}
+.wallet-picker-cancel:hover{color:#fff}
+.nav-wallet.wallet-connected{background:#10160e;color:var(--accent);border-color:#566d40;cursor:pointer}
+.nav-wallet.wallet-connected:hover{background:#151d12}
+
+/* Keep the staking availability badge inside the tab's box so it never clips on phones. */
+.nav-tabs .staking-nav{display:inline-flex!important;flex-direction:column!important;align-items:center!important;justify-content:center;gap:0;padding:5px 10px 7px!important;min-height:40px;line-height:1.1;overflow:visible}
+.nav-tabs .staking-nav small{position:static!important;order:-1;align-self:flex-end;transform:none!important;display:block;margin:0 -2px 3px 0;padding:2px 4px;font-size:5px;line-height:1;border:1px solid rgba(7,16,6,.45);border-radius:4px;background:var(--accent);color:#071006;letter-spacing:.07em;font-weight:1000;white-space:nowrap;z-index:3;box-shadow:0 0 10px rgba(167,255,42,.18)}
+@media(max-width:1100px){.nav-tabs{padding-top:5px;padding-bottom:5px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none}.nav-tabs .staking-nav{min-height:38px;flex-shrink:0}}
+@media(max-width:700px){.wallet-picker{padding:22px;border-radius:17px}.wallet-picker h2{font-size:26px}.wallet-choice{min-height:50px}.nav-shell{gap:8px}.nav-tabs{gap:3px}.nav-tabs .staking-nav{padding:4px 8px 6px!important}.nav-tabs .staking-nav small{font-size:5px;margin-bottom:3px}}
