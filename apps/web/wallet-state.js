@@ -1,61 +1,82 @@
-const connectButtons = [...document.querySelectorAll('.nav-wallet')];
-const WALLET_DISCONNECTED_KEY = 'unknown-wallet-app-disconnected';
+import { chooseWalletProvider, restoreWalletProvider, disconnectWalletApp } from './wallet-connect.js';
 
-function shortWallet(address) {
-  return address ? 'DISCONNECT WALLET' : 'CONNECT WALLET';
-}
+const WALLET_DISCONNECTED_KEY = 'unknown-wallet-app-disconnected';
+const connectButtons = [...document.querySelectorAll('.nav-wallet')].filter(button => button.id !== 'connect');
+let activeProvider = null;
+let boundProvider = null;
 
 function renderWallet(address) {
   for (const button of connectButtons) {
-    if (button.tagName === 'BUTTON') button.textContent = shortWallet(address);
-    else button.textContent = shortWallet(address);
+    button.textContent = address ? 'DISCONNECT WALLET' : 'CONNECT WALLET';
     button.classList.toggle('wallet-connected', !!address);
+    button.setAttribute('aria-label', address ? 'Disconnect wallet from UNKNOWN' : 'Connect wallet');
   }
 }
 
-async function syncWallet() {
-  if (!window.ethereum?.request) return;
+async function readActiveAddress(provider) {
+  if (!provider?.request) return '';
   try {
-    const accounts = await window.ethereum.request({ method: 'eth_accounts' });
-    renderWallet(localStorage.getItem(WALLET_DISCONNECTED_KEY) === '1' ? '' : (accounts?.[0] || ''));
+    const accounts = await provider.request({ method:'eth_accounts' });
+    return accounts?.[0] || '';
   } catch {
+    return '';
+  }
+}
+
+function bindProvider(provider) {
+  if (!provider?.on || boundProvider === provider) return;
+  boundProvider = provider;
+  provider.on('accountsChanged', accounts => {
+    renderWallet(localStorage.getItem(WALLET_DISCONNECTED_KEY) === '1' ? '' : (accounts?.[0] || ''));
+  });
+  provider.on('disconnect', () => {
+    disconnectWalletApp().finally(() => {
+      activeProvider = null;
+      renderWallet('');
+    });
+  });
+}
+
+async function syncWallet() {
+  try {
+    activeProvider = await restoreWalletProvider();
+    if (activeProvider) {
+      bindProvider(activeProvider);
+      renderWallet(await readActiveAddress(activeProvider));
+    } else {
+      renderWallet('');
+    }
+  } catch (e) {
+    console.warn('WALLET_RESTORE_ERROR', e);
     renderWallet('');
   }
 }
 
 async function connectWallet() {
-  if (!window.ethereum?.request) {
-    window.location.href = './mint.html';
-    return;
-  }
   try {
-    localStorage.removeItem(WALLET_DISCONNECTED_KEY);
-    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
-    renderWallet(accounts?.[0] || '');
+    activeProvider = await chooseWalletProvider();
+    bindProvider(activeProvider);
+    renderWallet(await readActiveAddress(activeProvider));
   } catch (e) {
     console.warn('WALLET_CONNECT_ERROR', e);
+    if (e?.message && e.message !== 'Wallet connection cancelled.') {
+      window.alert(e.message);
+    }
   }
 }
 
 for (const button of connectButtons) {
-  if (button.id === 'connect') continue;
-  button.addEventListener('click', e => {
-    if (window.ethereum?.request && localStorage.getItem(WALLET_DISCONNECTED_KEY) !== '1' && button.classList.contains('wallet-connected')) {
-      e.preventDefault();
-      localStorage.setItem(WALLET_DISCONNECTED_KEY, '1');
+  button.addEventListener('click', async event => {
+    event.preventDefault();
+    const connected = button.classList.contains('wallet-connected');
+    if (connected) {
+      await disconnectWalletApp();
+      activeProvider = null;
       renderWallet('');
       return;
     }
-    if (button.tagName === 'A' && button.getAttribute('href') === './mint.html' && window.ethereum?.request) {
-      e.preventDefault();
-      connectWallet();
-    } else if (button.tagName === 'BUTTON') {
-      connectWallet();
-    }
+    await connectWallet();
   });
 }
 
-if (window.ethereum?.on) {
-  window.ethereum.on('accountsChanged', accounts => renderWallet(localStorage.getItem(WALLET_DISCONNECTED_KEY) === '1' ? '' : (accounts?.[0] || '')));
-}
 syncWallet();
