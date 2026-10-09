@@ -119,7 +119,8 @@ async function connect(requestAccounts = true) {
   nft = new Contract(NFT_ADDRESS, NFT_ABI, signer);
   imd = new Contract(IMD_ADDRESS, ERC20_ABI, signer);
   $('mineCpu').disabled = false;
-  $('mineGpu').disabled = !(await hasWebGPU());
+  $('mineGpu').textContent = (await hasWebGPU()) ? '⚡ MINE WITH GPU' : '⚡ GPU / CPU AUTO';
+  $('mineGpu').disabled = false;
   await refreshWalletBalance();
   bindSelectedWalletEvents(rawWalletProvider);
 
@@ -180,9 +181,26 @@ async function refresh() {
   $('mintedRibbonSub').textContent = Number(minted) >= 1111 ? 'Every minted NFT was revealed at mint.' : `${Number(remaining)} NFTs remain · Phase ${phaseNumber} · ${difficulty} difficulty bits · instant reveal`;
 }
 
+function isMobileMiningDevice() {
+  const touchNarrow = Number(navigator.maxTouchPoints || 0) > 1 &&
+    typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 900px)').matches;
+  return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '') || touchNarrow;
+}
+
+function getCpuWorkerCount() {
+  const cores = Number(navigator.hardwareConcurrency || 2);
+  const memory = Number(navigator.deviceMemory || 0);
+  if (isMobileMiningDevice()) {
+    // Limit phones to 1–2 workers to reduce thermal throttling and battery drain.
+    if (memory > 0 && memory <= 4) return 1;
+    return Math.max(1, Math.min(2, cores - 1));
+  }
+  return Math.max(1, Math.min(8, cores - 1));
+}
+
 async function mineCpuWorkers(args, work, controller, startedAt) {
   return await new Promise((resolve, reject) => {
-    const count = Math.max(1, Math.min(8, Number(navigator.hardwareConcurrency || 4) - 1));
+    const count = getCpuWorkerCount();
     const workers = [];
     let totalHashes = 0n;
     let settled = false;
@@ -207,7 +225,7 @@ async function mineCpuWorkers(args, work, controller, startedAt) {
           totalHashes += BigInt(e.data.hashes) - BigInt(worker._lastHashes || 0);
           worker._lastHashes = e.data.hashes;
           const elapsedSec = Math.max(0.001, (performance.now() - startedAt) / 1000);
-          setStatus(`CPU verification fallback · ${count} workers · ${formatCompact(totalHashes)} · ${formatCompact(Number(totalHashes) / elapsedSec)}/s`);
+          setStatus(`${isMobileMiningDevice() ? 'Mobile CPU mining' : 'CPU mining'} · ${count} workers · ${formatCompact(totalHashes)} · ${formatCompact(Number(totalHashes) / elapsedSec)}/s`);
         }
         if (e.data.type === 'solution' && !settled) {
           settled = true;
@@ -238,94 +256,115 @@ async function mineCpuWorkers(args, work, controller, startedAt) {
 
 async function start(kind) {
   if (!nft || !wallet) return;
-  controller?.abort(); controller = new AbortController();
-  await refresh();
-  if (!readProvider) readProvider = new JsonRpcProvider(CONFIG.rpcUrl);
-  const readNft = new Contract(NFT_ADDRESS, NFT_ABI, readProvider);
-
-  // Mirror the contract's currentWork() exactly without relying on an eth_call that can
-  // return empty revert data on some public RPCs: seedBlock = latestBlock - 1.
-  const latestNumber = await readProvider.getBlockNumber();
-  if (latestNumber < 1) throw new Error('CHAIN_NOT_READY');
-  const seedBlock = latestNumber - 1;
-  const seed = await readProvider.getBlock(seedBlock);
-  if (!seed?.hash) throw new Error('SEED_BLOCK_UNAVAILABLE');
-
-  const minted = await readNft.totalMinted();
-  const phase = await readNft.currentPhase();
-  const [price, difficulty] = await Promise.all([
-    readNft.phasePrice(phase),
-    readNft.phaseDifficultyBits(phase)
-  ]);
-  if (Number(minted) >= 1111) return setStatus('Sold out.');
-
-  const expectedTokenId = BigInt(minted) + 1n;
-  work = {
-    seedBlock: BigInt(seedBlock),
-    challenge: seed.hash,
-    tokenId: expectedTokenId,
-    phase,
-    price,
-    difficultyBits: Number(difficulty)
-  };
-  $('work').textContent = `Seed block ${work.seedBlock} · ${work.difficultyBits} bits`;
-  $('mineCpu').disabled = true; $('mineGpu').disabled = true; $('stop').disabled = false;
+  controller?.abort();
+  const activeController = new AbortController();
+  controller = activeController;
+  const signal = activeController.signal;
   const miningStartedAt = performance.now();
-  setStatus(`${kind.toUpperCase()} mining NFT ${work.tokenId}…`);
+
+  $('mineCpu').disabled = true;
+  $('mineGpu').disabled = true;
+  $('stop').disabled = false;
 
   try {
-    let result;
-    const args = { chainId: CONFIG.chainId, contractAddress: NFT_ADDRESS, challenge: work.challenge,
-      seedBlock: work.seedBlock, tokenId: work.tokenId, wallet, difficultyBits: work.difficultyBits };
-    if (kind === 'gpu') {
-      result = await mineGpu({...args, signal:controller.signal, onProgress:p => setStatus(`GPU mining · ${formatCompact(p.hashes)} · ${formatCompact(Number(p.hashes) / Math.max(0.001, (performance.now() - miningStartedAt) / 1000))}/s`)});
-      const gpuCandidateHash = proofHash({...args, nonce:result.nonce});
-      if (!validDifficulty(gpuCandidateHash, work.difficultyBits)) {
-        setStatus('GPU candidate failed verification; switching to CPU verification fallback…', 'err');
-        result = await mineCpuWorkers(args, work, controller, miningStartedAt);
-      }
-    } else {
-      result = await new Promise((resolve,reject)=>{
-        const count = Math.max(1, Math.min(8, Number(navigator.hardwareConcurrency || 4) - 1));
-        const workers = []; let totalHashes = 0n; let settled = false;
-        const prefix = Array.from(buildPowInput({...args, nonce:0}));
-        const stopAll=()=>{ for(const w of workers) w.terminate(); };
-        const stop=()=>{ if(!settled){ settled=true; stopAll(); reject(new Error('MINING_ABORTED')); } };
-        controller.signal.addEventListener('abort', stop, {once:true});
-        for(let i=0;i<count;i++){
-          const worker = new Worker(new URL('./cpu-miner-worker.js', import.meta.url), {type:'module'}); workers.push(worker);
-          worker.onmessage=e=>{
-            if(e.data.type==='progress'){ totalHashes += BigInt(e.data.hashes)-BigInt(worker._lastHashes||0); worker._lastHashes=e.data.hashes; const elapsedSec = Math.max(0.001, (performance.now() - miningStartedAt) / 1000);
-              setStatus(`CPU mining · ${count} workers · ${formatCompact(totalHashes)} · ${formatCompact(Number(totalHashes) / elapsedSec)}/s`); }
-            if(e.data.type==='solution' && !settled){ settled=true; stopAll(); resolve(e.data); }
-          };
-          worker.onerror=e=>{ if(!settled){ settled=true; stopAll(); reject(e.error||new Error('CPU_WORKER_ERROR')); } };
-          worker.postMessage({type:'start', prefixBytes:prefix, startNonce:String(i), step:String(count), difficultyBits:work.difficultyBits,
-            seedBlock:work.seedBlock.toString(), challenge:work.challenge, tokenId:work.tokenId.toString()});
-        }
-      });
-    }
-    if (controller.signal.aborted) throw new Error('MINING_ABORTED');
+    // Keep all setup calls inside the try block. Mobile RPCs can fail intermittently;
+    // the UI must recover and re-enable the controls instead of getting stuck.
+    await refresh();
+    if (signal.aborted) throw new Error('MINING_ABORTED');
+    if (!readProvider) readProvider = new JsonRpcProvider(CONFIG.rpcUrl);
+    const readNft = new Contract(NFT_ADDRESS, NFT_ABI, readProvider);
 
-    // The smart contract is the final authority. Recompute locally for diagnostics,
-    // then verify the candidate nonce directly with the deployed contract before payment.
-    // Recompute the candidate from the canonical proof input. The nonce is the
-    // only value the GPU/CPU miner needs to return; its displayed digest is not
-    // trusted because GPU work can race across lanes.
-    const recomputedHash = proofHash({...args, nonce: result.nonce});
-    const localValid = validDifficulty(recomputedHash, work.difficultyBits);
-    if (!localValid) throw new Error('PROOF_INVALID');
+    const latestNumber = await readProvider.getBlockNumber();
+    if (latestNumber < 1) throw new Error('CHAIN_NOT_READY');
+    const seedBlock = latestNumber - 1;
+    const seed = await readProvider.getBlock(seedBlock);
+    if (!seed?.hash) throw new Error('SEED_BLOCK_UNAVAILABLE');
+
+    const minted = await readNft.totalMinted();
+    if (Number(minted) >= 1111) {
+      setStatus('Sold out.');
+      return;
+    }
+    const phase = await readNft.currentPhase();
+    const [price, difficulty] = await Promise.all([
+      readNft.phasePrice(phase),
+      readNft.phaseDifficultyBits(phase)
+    ]);
+
+    const expectedTokenId = BigInt(minted) + 1n;
+    work = {
+      seedBlock: BigInt(seedBlock),
+      challenge: seed.hash,
+      tokenId: expectedTokenId,
+      phase,
+      price,
+      difficultyBits: Number(difficulty)
+    };
+    $('work').textContent = `Seed block ${work.seedBlock} · ${work.difficultyBits} bits`;
+    setStatus(`${kind.toUpperCase()} mining NFT ${work.tokenId}…`);
+
+    const args = {
+      chainId: CONFIG.chainId,
+      contractAddress: NFT_ADDRESS,
+      challenge: work.challenge,
+      seedBlock: work.seedBlock,
+      tokenId: work.tokenId,
+      wallet,
+      difficultyBits: work.difficultyBits
+    };
+
+    let result;
+    if (kind === 'gpu') {
+      let gpuResult = null;
+      if (await hasWebGPU()) {
+        try {
+          gpuResult = await mineGpu({
+            ...args,
+            signal,
+            onProgress: p => setStatus(`GPU mining · ${formatCompact(p.hashes)} · ${formatCompact(Number(p.hashes) / Math.max(0.001, (performance.now() - miningStartedAt) / 1000))}/s`)
+          });
+        } catch (gpuError) {
+          if (signal.aborted || gpuError?.message === 'MINING_ABORTED') throw gpuError;
+          console.warn('GPU_MINING_FALLBACK', gpuError);
+          setStatus('GPU is unavailable on this device/browser. Falling back to CPU mining…');
+        }
+      } else {
+        setStatus(isMobileMiningDevice()
+          ? 'WebGPU is not supported by this mobile browser. Using mobile-safe CPU mining…'
+          : 'WebGPU is not available. Using CPU mining…');
+      }
+
+      if (gpuResult) {
+        const gpuCandidateHash = proofHash({ ...args, nonce: gpuResult.nonce });
+        if (validDifficulty(gpuCandidateHash, work.difficultyBits)) {
+          result = gpuResult;
+        } else {
+          console.warn('GPU candidate failed local proof verification; using CPU fallback.');
+          setStatus('GPU proof did not pass verification. Restarting with CPU mining…', 'err');
+        }
+      }
+
+      // This is also the automatic mobile fallback on browsers without WebGPU.
+      if (!result) result = await mineCpuWorkers(args, work, activeController, miningStartedAt);
+    } else {
+      result = await mineCpuWorkers(args, work, activeController, miningStartedAt);
+    }
+
+    if (signal.aborted) throw new Error('MINING_ABORTED');
+
+    const recomputedHash = proofHash({ ...args, nonce: result.nonce });
+    if (!validDifficulty(recomputedHash, work.difficultyBits)) throw new Error('PROOF_INVALID');
 
     setStatus('Valid proof found. Confirming on-chain…', 'ok');
-
     const onchainOk = await readNft.isValidProof(wallet, work.tokenId, work.seedBlock, result.nonce);
     if (!onchainOk) throw new Error('PROOF_REJECTED_ONCHAIN');
 
     setStatus('Proof accepted by contract. Preparing IMD payment…', 'ok');
-
     const readImd = new Contract(IMD_ADDRESS, ERC20_ABI, readProvider);
     const balance = await readImd.balanceOf(wallet);
-    if (balance < work.price) throw new Error(`Insufficient IMD balance. Need ${formatUnits(work.price, CONFIG.imdDecimals)} IMD.`);
+    if (balance < work.price) {
+      throw new Error(`Insufficient IMD balance. Need ${formatUnits(work.price, CONFIG.imdDecimals)} IMD.`);
+    }
 
     const allowance = await imd.allowance(wallet, NFT_ADDRESS);
     if (allowance < work.price) {
@@ -345,14 +384,19 @@ async function start(kind) {
     window.open(`https://opensea.io/assets/ethereum/${CONFIG.nftAddress}/${work.tokenId}`, '_blank', 'noopener');
     await refresh();
   } catch (e) {
-    if (controller.signal.aborted) setStatus('Mining stopped.');
-    else {
+    if (signal.aborted || e?.message === 'MINING_ABORTED') {
+      setStatus('Mining stopped.');
+    } else {
       console.error('MINING_ERROR', e);
       const reason = e?.shortMessage || e?.reason || e?.info?.error?.message || e?.message || 'Mining failed.';
       setStatus(reason, 'err');
     }
   } finally {
-    $('mineCpu').disabled = false; $('mineGpu').disabled = !(await hasWebGPU()); $('stop').disabled = true;
+    if (controller === activeController) {
+      $('mineCpu').disabled = !wallet;
+      $('mineGpu').disabled = !wallet;
+      $('stop').disabled = true;
+    }
   }
 }
 
