@@ -84,7 +84,12 @@ fn main(@builtin(global_invocation_id) gid:vec3<u32>) {
 
 export const GPU_SHADER = SHADER;
 
-const BATCH = 65536;
+function getBatchSize() {
+  const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent || '');
+  const cores = Number(navigator.hardwareConcurrency || 4);
+  // Smaller dispatches reduce GPU watchdog/time-out and memory pressure on phones.
+  return mobile ? 8192 : (cores <= 4 ? 32768 : 65536);
+}
 
 export async function hasWebGPU() {
   return typeof navigator !== 'undefined' && !!navigator.gpu;
@@ -109,6 +114,7 @@ export async function mineGpu({ chainId, contractAddress, challenge, seedBlock, 
   const bindGroupLayout = pipeline.getBindGroupLayout(0);
   let nonce = BigInt(startNonce);
   const started = performance.now();
+  const batchSize = getBatchSize();
   let batches = 0;
 
   try {
@@ -126,23 +132,23 @@ export async function mineGpu({ chainId, contractAddress, challenge, seedBlock, 
         {binding:0, resource:{buffer:paramBuffer}}, {binding:1, resource:{buffer:outputBuffer}}
       ]});
       const encoder = device.createCommandEncoder();
-      const pass = encoder.beginComputePass(); pass.setPipeline(pipeline); pass.setBindGroup(0,bind); pass.dispatchWorkgroups(Math.ceil(BATCH/64)); pass.end();
+      const pass = encoder.beginComputePass(); pass.setPipeline(pipeline); pass.setBindGroup(0,bind); pass.dispatchWorkgroups(Math.ceil(batchSize/64)); pass.end();
       encoder.copyBufferToBuffer(outputBuffer,0,readBuffer,0,11*4);
       device.queue.submit([encoder.finish()]);
       await readBuffer.mapAsync(GPUMapMode.READ);
       const result = new Uint32Array(readBuffer.getMappedRange().slice(0));
       readBuffer.unmap(); paramBuffer.destroy(); outputBuffer.destroy(); readBuffer.destroy();
       batches++;
-      onProgress?.({ hashes: BigInt(batches*BATCH).toString(), nonce: nonce.toString(), elapsedMs: Math.round(performance.now()-started) });
+      onProgress?.({ hashes: BigInt(batches*batchSize).toString(), nonce: nonce.toString(), elapsedMs: Math.round(performance.now()-started) });
       if (result[0] !== 0xffffffff) {
         const winningNonce = nonce + BigInt(result[0]);
         // The winner index is atomic; the digest slots are intentionally ignored because
         // multiple winning invocations can race when writing non-atomic digest words.
         // Recompute the winning digest with the reference implementation for exact parity.
         const winningHash = proofHash({ chainId, contractAddress, challenge, seedBlock, tokenId, wallet, nonce: winningNonce });
-        return { nonce: winningNonce.toString(), hash: winningHash, hashes: BigInt(batches*BATCH).toString(), elapsedMs: Math.round(performance.now()-started) };
+        return { nonce: winningNonce.toString(), hash: winningHash, hashes: BigInt(batches*batchSize).toString(), elapsedMs: Math.round(performance.now()-started) };
       }
-      nonce += BigInt(BATCH);
+      nonce += BigInt(batchSize);
     }
     throw new Error('MINING_ABORTED');
   } finally {
