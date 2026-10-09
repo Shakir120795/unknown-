@@ -124,12 +124,12 @@ async function makeWalletConnectProvider() {
 
   walletConnectProvider = await EthereumProvider.init({
     projectId,
-    optionalChains: [1],
+    chains: [1],
     showQrModal: true,
     methods: [
       'eth_sendTransaction', 'personal_sign', 'eth_signTypedData', 'eth_signTypedData_v4',
       'eth_call', 'eth_estimateGas', 'eth_getBalance', 'eth_getTransactionCount',
-      'eth_getBlockByNumber', 'eth_getBlockByHash', 'eth_chainId', 'wallet_switchEthereumChain'
+      'eth_getBlockByNumber', 'eth_getBlockByHash', 'eth_blockNumber', 'eth_gasPrice', 'eth_maxPriorityFeePerGas', 'eth_getTransactionReceipt', 'eth_chainId', 'wallet_switchEthereumChain'
     ],
     events: ['chainChanged', 'accountsChanged'],
     rpcMap: { 1: cfg.rpcUrl || 'https://ethereum-rpc.publicnode.com' },
